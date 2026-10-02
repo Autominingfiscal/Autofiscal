@@ -1,6 +1,7 @@
 """Apoio para mexer nas planilhas sem estragar o que ja esta la."""
 
 import datetime
+import os
 import re
 import shutil
 from copy import copy
@@ -26,15 +27,38 @@ class ErroDeUso(Exception):
 
 
 # ---------------------------------------------------------------- backup ----
-def fazer_backup(caminho):
-    """Grava uma copia do arquivo na subpasta Backup e devolve o caminho."""
+MANTER_BACKUPS = 30     # copias guardadas de CADA planilha; as mais velhas saem
+
+
+def fazer_backup(caminho, manter=MANTER_BACKUPS):
+    """Grava uma copia do arquivo na subpasta Backup e devolve o caminho.
+
+    Depois apaga as copias mais antigas DESTA planilha alem das `manter` mais
+    recentes. So mexe em arquivos com o carimbo que esta funcao grava."""
     caminho = Path(caminho)
     pasta = caminho.parent / "Backup"
     pasta.mkdir(exist_ok=True)
     carimbo = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
     destino = pasta / f"{carimbo}_{caminho.name}"
+    n = 2
+    while destino.exists():     # dois backups no mesmo segundo (rodar tudo)
+        destino = pasta / f"{carimbo}_{caminho.stem} ({n}){caminho.suffix}"
+        n += 1
     shutil.copy2(caminho, destino)
+    _limpar_backups(pasta, caminho.name, manter)
     return destino
+
+
+def _limpar_backups(pasta, nome, manter):
+    base, ext = os.path.splitext(nome)
+    desta = re.compile(r"^\d{4}-\d{2}-\d{2}_\d{6}_" + re.escape(base)
+                       + r"(?: \(\d+\))?" + re.escape(ext) + "$")
+    copias = sorted(p for p in pasta.iterdir() if p.is_file() and desta.match(p.name))
+    for velha in copias[:-manter] if manter > 0 else []:
+        try:
+            velha.unlink()
+        except OSError:
+            pass        # aberta no Excel, por exemplo: sai na proxima vez
 
 
 def gravar(wb, caminho):

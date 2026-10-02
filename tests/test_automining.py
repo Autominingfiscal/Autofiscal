@@ -9,7 +9,7 @@ import _apoio  # noqa: F401  (ajusta o sys.path)
 
 import openpyxl
 
-from automining import chaves, faturamento, pdf
+from automining import chaves, faturamento, pdf, planilha
 from automining.expedicao import nome_eh_data
 from automining.planilha import como_numero, inserir_linhas
 from automining.refs import deslocar_faixa, deslocar_formula
@@ -56,6 +56,31 @@ class TestInserirLinhas(unittest.TestCase):
         resumo["A1"] = "=SUM(Dados!B2:B5)"
         inserir_linhas(wb, ws, 5, 3)
         self.assertEqual(resumo["A1"].value, "=SUM(Dados!B2:B8)")
+
+
+class TestBackup(unittest.TestCase):
+    def test_mesmo_segundo_nao_sobrescreve_e_limpa_as_velhas(self):
+        pasta = Path(_apoio.pasta_temporaria(self))
+        plan = pasta / "REMESSA.xlsx"
+        backup = pasta / "Backup"
+        backup.mkdir()
+        for dia in range(1, 6):                                  # 5 copias antigas
+            (backup / ("2026-09-%02d_080000_REMESSA.xlsx" % dia)).write_text("velha")
+        (backup / "2026-09-01_080000_FATURAMENTO.xlsx").write_text("outra planilha")
+        (backup / "anotacoes.txt").write_text("nao e backup")
+
+        plan.write_text("v1")
+        primeira = planilha.fazer_backup(plan, manter=3)
+        plan.write_text("v2")
+        segunda = planilha.fazer_backup(plan, manter=3)
+
+        self.assertNotEqual(primeira, segunda)
+        self.assertEqual(primeira.read_text(), "v1")             # nao foi sobrescrita
+        self.assertEqual(segunda.read_text(), "v2")
+        restantes = sorted(p.name for p in backup.iterdir())
+        self.assertEqual(len([n for n in restantes if "REMESSA" in n]), 3)
+        self.assertIn("2026-09-01_080000_FATURAMENTO.xlsx", restantes)
+        self.assertIn("anotacoes.txt", restantes)
 
 
 class TestChaveDoPdf(unittest.TestCase):

@@ -11,6 +11,8 @@ A diferença prática é que não há mais macro dentro da planilha. As planilha
 voltam a ser `.xlsx` comuns e quem mexe nelas são os scripts desta pasta.
 Cada rotina continua gravando uma cópia em `Backup` antes de tocar em
 qualquer coisa.
+Ficam as 30 cópias mais recentes de cada planilha; as mais antigas são
+apagadas sozinhas.
 
 | Atalho | Script | O que faz |
 |---|---|---|
