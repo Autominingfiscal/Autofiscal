@@ -1,0 +1,12 @@
+{
+  "nome": "Modelo de ferramenta",
+  "descricao": "Copie esta pasta, tire o _ do nome e troque os textos.",
+  "ordem": 90,
+  "acoes": [
+    {"rotulo": "Rodar", "script": "exemplo.py", "principal": true,
+     "descricao": "Roda o exemplo."},
+    {"rotulo": "Rodar numa pasta", "script": "exemplo.py",
+     "args": ["{pasta:Escolha uma pasta}"],
+     "descricao": "Pergunta a pasta antes de rodar."}
+  ]
+}

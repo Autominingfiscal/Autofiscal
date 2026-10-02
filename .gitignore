@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Gerados pelas ferramentas ao rodar
+Backup/
+autofiscal_erro.txt
+*_log.csv
+*_erros.log
+painel_expedicao.html
+_relatorio_arquivamento.*
+Resultado conferência ISSQN*.xlsx
+conferir_issqn_config.json
+
+# Planilhas e PDFs de trabalho nunca entram no repositório
+*.xlsx
+*.xlsm
+*.pdf
+~$*
+
+# Capturas de tela
+Claude outputs/

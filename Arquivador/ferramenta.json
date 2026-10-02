@@ -1,0 +1,68 @@
+{
+  "nome": "Arquivar documentos do dia",
+  "ordem": 60,
+  "descricao": "Distribui os documentos soltos da pasta do dia nas pastas das notas fiscais (NF, ticket, pré-cálculo...).",
+  "requer": [
+    {
+      "modulo": "PIL",
+      "pacote": "pillow"
+    }
+  ],
+  "acoes": [
+    {
+      "rotulo": "Simular (não move nada)",
+      "script": "arquivar.py",
+      "principal": true,
+      "args": [
+        "{pasta:Escolha a pasta do dia}",
+        "--simular",
+        "--sem-faixa",
+        "--sem-pausa"
+      ],
+      "descricao": "Mostra o que seria feito. Use antes de arquivar de verdade."
+    },
+    {
+      "rotulo": "Arquivar",
+      "script": "arquivar.py",
+      "args": [
+        "{pasta:Escolha a pasta do dia}",
+        [
+          "--faixa",
+          "{texto?:Criar também pastas para uma faixa de notas? (ex.: 18964-18998). Deixe vazio para pular.}"
+        ],
+        "--sim",
+        "--sem-pausa",
+        "--sem-faixa"
+      ],
+      "confirmar": "Os arquivos desta pasta vão ser movidos para as pastas das notas. Continuar?",
+      "descricao": "Move os arquivos. Dá para voltar atrás com Desfazer."
+    },
+    {
+      "rotulo": "Só criar as pastas",
+      "script": "arquivar.py",
+      "args": [
+        "{pasta:Escolha a pasta do dia}",
+        [
+          "--faixa",
+          "{texto?:Criar também pastas para uma faixa de notas? (ex.: 18964-18998). Deixe vazio para pular.}"
+        ],
+        "--somente-pastas",
+        "--sim",
+        "--sem-pausa",
+        "--sem-faixa"
+      ],
+      "descricao": "Cria as pastas das notas sem mover nenhum arquivo."
+    },
+    {
+      "rotulo": "Desfazer o último arquivamento",
+      "script": "arquivar.py",
+      "args": [
+        "{pasta:Escolha a pasta do dia}",
+        "--desfazer",
+        "--sem-pausa"
+      ],
+      "confirmar": "Devolver os arquivos para onde estavam antes do último arquivamento desta pasta?",
+      "descricao": "Volta tudo como estava antes da última execução nesta pasta."
+    }
+  ]
+}

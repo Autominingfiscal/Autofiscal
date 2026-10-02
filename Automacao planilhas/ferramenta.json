@@ -1,0 +1,44 @@
+{
+  "nome": "Remessas e Faturamento",
+  "ordem": 10,
+  "descricao": "Lança as notas da expedição na aba Remessas Porto, preenche as chaves de acesso a partir dos PDFs e alimenta a planilha de FATURAMENTO. Feche as planilhas no Excel antes de rodar.",
+  "config": "config.ini",
+  "ajuda": "LEIA-ME.md",
+  "requer": [
+    {
+      "modulo": "openpyxl",
+      "pacote": "openpyxl"
+    }
+  ],
+  "acoes": [
+    {
+      "rotulo": "Rodar tudo",
+      "script": "rodar_tudo.py",
+      "principal": true,
+      "descricao": "Faz as três etapas em sequência: remessas, chaves de acesso e faturamento."
+    },
+    {
+      "rotulo": "1. Atualizar remessas",
+      "script": "atualizar_remessas.py",
+      "descricao": "Reescreve a aba Remessas Porto a partir da expedição. Mantém chaves e VL. UNITÁRIO já digitados."
+    },
+    {
+      "rotulo": "2. Preencher chaves",
+      "script": "preencher_chaves.py",
+      "descricao": "Lê os PDFs das notas e preenche a coluna CHAVE ACESSO das linhas que ainda estão sem chave."
+    },
+    {
+      "rotulo": "3. Atualizar faturamento",
+      "script": "atualizar_faturamento.py",
+      "descricao": "Leva as notas da remessa para a aba do mês na planilha de FATURAMENTO."
+    },
+    {
+      "rotulo": "Conferir a chave de um PDF",
+      "script": "preencher_chaves.py",
+      "args": [
+        "{arquivo:Escolha o PDF da nota|*.pdf *.PDF}"
+      ],
+      "descricao": "Mostra a chave de acesso que o programa lê dentro de um PDF, sem gravar nada."
+    }
+  ]
+}

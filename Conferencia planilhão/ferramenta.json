@@ -1,0 +1,19 @@
+{
+  "nome": "Conferência de retenções",
+  "ordem": 50,
+  "descricao": "Compara, nota a nota, os impostos retidos do PLANILHÃO com a planilha 2-CONFERÊNCIA RETENÇÕES e gera um relatório em Excel.",
+  "requer": [
+    {
+      "modulo": "openpyxl",
+      "pacote": "openpyxl"
+    }
+  ],
+  "acoes": [
+    {
+      "rotulo": "Conferir retenções",
+      "script": "conferencia_retencoes.py",
+      "principal": true,
+      "descricao": "Salve e feche as planilhas antes. Se ele perguntar a aba, responda no campo de resposta abaixo."
+    }
+  ]
+}

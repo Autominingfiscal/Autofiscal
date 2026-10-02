@@ -1,0 +1,19 @@
+{
+  "nome": "Conferência ISSQN",
+  "ordem": 40,
+  "descricao": "Confere a planilha Retenções ISSQN com a 2-CONFERÊNCIA RETENÇÕES e com a pasta das notas. Gera uma planilha de resultado.",
+  "requer": [
+    {
+      "modulo": "openpyxl",
+      "pacote": "openpyxl"
+    }
+  ],
+  "acoes": [
+    {
+      "rotulo": "Conferir ISSQN",
+      "script": "conferir_issqn.py",
+      "principal": true,
+      "descricao": "Abre janelas para escolher as planilhas e a pasta das notas (as últimas escolhas ficam lembradas)."
+    }
+  ]
+}

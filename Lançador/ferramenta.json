@@ -1,0 +1,56 @@
+{
+  "nome": "Lançador da expedição",
+  "ordem": 20,
+  "descricao": "Acompanha as pastas da balança e lança na planilha EXPED_CONCENTRADO aberta no Excel: tara, peso de saída com a cor da faixa de aceite, e número e hora da nota fiscal.",
+  "config": "etapa3_config.ini",
+  "requer": [
+    {
+      "modulo": "win32com",
+      "pacote": "pywin32"
+    },
+    {
+      "modulo": "pypdf",
+      "pacote": "pypdf"
+    },
+    {
+      "modulo": "openpyxl",
+      "pacote": "openpyxl"
+    }
+  ],
+  "campos": {
+    "planilha": {
+      "tipo": "texto",
+      "ajuda": "Nome da planilha que fica ABERTA no Excel (não é o caminho). Pode terminar com *."
+    },
+    "inicio_turno_vespertino": {
+      "tipo": "texto"
+    }
+  },
+  "acoes": [
+    {
+      "rotulo": "▶ Iniciar lançador",
+      "script": "etapa3_lancador.py",
+      "continuo": true,
+      "principal": true,
+      "descricao": "Fica olhando as pastas e lançando sozinho. Deixe a planilha aberta no Excel. Para desligar, clique em Parar."
+    },
+    {
+      "rotulo": "Testar numa planilha",
+      "script": "etapa3_lancador.py",
+      "args": [
+        "--teste",
+        "{arquivo:Escolha a planilha EXPED_CONCENTRADO|*.xlsx *.xlsm}"
+      ],
+      "descricao": "Mostra o que seria lançado, sem gravar nada."
+    },
+    {
+      "rotulo": "Ver o que leu de uma nota",
+      "script": "etapa3_lancador.py",
+      "args": [
+        "--ver-nota",
+        "{arquivo:Escolha o PDF da nota fiscal|*.pdf *.PDF}"
+      ],
+      "descricao": "Mostra número, hora e dados que o programa extraiu de uma DANFE."
+    }
+  ]
+}

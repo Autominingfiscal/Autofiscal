@@ -1,0 +1,27 @@
+{
+  "nome": "Painel da expedição",
+  "ordem": 30,
+  "descricao": "Mostra o andamento da expedição no navegador deste computador (toneladas, faixa de aceite, caminhões na mina). Não usa rede.",
+  "config": "painel_config.ini",
+  "requer": [
+    {
+      "modulo": "openpyxl",
+      "pacote": "openpyxl"
+    }
+  ],
+  "campos": {
+    "planilha": {
+      "tipo": "arquivo",
+      "ajuda": "Caminho completo da planilha EXPED_CONCENTRADO. Pode usar * no nome (ex.: ...\\EXPED_CONCENTRADO*.xlsx) para pegar sempre a mais recente."
+    }
+  },
+  "acoes": [
+    {
+      "rotulo": "▶ Abrir painel",
+      "script": "painel_local.py",
+      "continuo": true,
+      "principal": true,
+      "descricao": "Abre o painel no navegador e atualiza sozinho. Tecle F11 no navegador para tela cheia. Clique em Parar para desligar."
+    }
+  ]
+}
