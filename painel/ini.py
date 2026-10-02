@@ -25,7 +25,8 @@ class Campo:
 class DocumentoIni:
     def __init__(self, caminho):
         self.caminho = caminho
-        bruto = open(caminho, "rb").read()
+        with open(caminho, "rb") as f:
+            bruto = f.read()
         self.bom = bruto.startswith(b"\xef\xbb\xbf")
         if self.bom:
             bruto = bruto[3:]

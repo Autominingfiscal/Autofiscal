@@ -23,7 +23,9 @@ def extrair_texto(caminho):
 
     pedacos = []
     for bruto in _streams(dados):
-        conteudo = _descompactar(bruto)
+        # stream sem compressao (alguns geradores de PDF nao comprimem): o
+        # texto ja esta legivel no proprio stream
+        conteudo = _descompactar(bruto) or bruto
         if conteudo:
             pedacos.append(_texto_do_conteudo(conteudo))
     return " ".join(p for p in pedacos if p)
