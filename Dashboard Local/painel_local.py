@@ -136,6 +136,8 @@ def carregar_config():
 # =============================================================================
 # Caminhos que funcionam para qualquer usuario do Windows
 # =============================================================================
+# Existe uma copia desta funcao em cada ferramenta (cada uma roda sozinha).
+# Mudou aqui? Mude nas outras: tests/test_copias_iguais.py confere.
 def caminho_do_usuario(texto, base=None):
     """Ajusta um caminho do config para o usuario que esta rodando o script.
 

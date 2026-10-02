@@ -6,6 +6,8 @@ import os
 import re
 
 
+# Existe uma copia desta funcao em cada ferramenta (cada uma roda sozinha).
+# Mudou aqui? Mude nas outras: tests/test_copias_iguais.py confere.
 def caminho_do_usuario(texto, base=None):
     """Ajusta um caminho para o usuario que esta usando o computador.
 
