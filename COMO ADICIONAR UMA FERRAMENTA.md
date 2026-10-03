@@ -164,3 +164,22 @@ exemplo, o Lançador no computador da balança).
 - **Detectar o painel:** o painel define a variável de ambiente `AUTOFISCAL=1`, caso o script precise saber se está rodando dentro dele.
 - **Caminhos:** use a função `caminho_do_usuario` (em `comum\caminhos.py`), para
   que os caminhos funcionem para qualquer usuário do Windows.
+
+---
+
+## Gerar o instalador (para computadores sem Python)
+
+1. Neste computador, uma vez só: `pip install pyinstaller openpyxl pypdf pillow pywin32`
+   e o [Inno Setup 6](https://jrsoftware.org/isinfo.php).
+2. Suba a versão em `painel/__init__.py` (`VERSAO`) e conte o que mudou no
+   `CHANGELOG.md`.
+3. Rode os testes e depois dê dois cliques em `distribuicao\Gerar instalador.bat`.
+4. O instalador sai em `distribuicao\saida\Autofiscal-<versão>-instalador.exe`.
+
+Uma ferramenta nova entra no instalador sozinha. Se ela usar uma biblioteca nova,
+basta essa biblioteca estar instalada no computador que gera o instalador: os
+`import` dos scripts são encontrados automaticamente.
+
+Os `.ini` que vão no instalador são os desta pasta. Na primeira instalação eles
+viram as configurações iniciais. Nas atualizações, o instalador **não**
+sobrescreve os `.ini` que já estão no outro computador.

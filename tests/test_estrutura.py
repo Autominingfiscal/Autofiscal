@@ -24,7 +24,7 @@ from painel.ferramentas import carregar_todas
 
 COMUM = os.path.join(_apoio.RAIZ, "comum")
 MARCA_BLOCO = 'pasta "comum" do Autofiscal'
-FORA = {"comum", "tests", ".git", "__pycache__", "Claude outputs"}
+FORA = {"comum", "tests", "distribuicao", ".git", "__pycache__", "Claude outputs"}
 
 
 def arquivos_py_das_ferramentas():

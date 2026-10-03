@@ -93,3 +93,37 @@ class TestCaminhoDoUsuario(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestInstalado(unittest.TestCase):
+    """Instalado (.exe) nao existe python.exe: o executor roda os scripts."""
+
+    def test_pedido_de_script(self):
+        from painel.executor import pedido_de_script
+        self.assertEqual(pedido_de_script(["a.exe", "--rodar-script", "x.py", "1", "2"]),
+                         ("x.py", ["1", "2"]))
+        self.assertIsNone(pedido_de_script(["a.exe"]))
+        self.assertIsNone(pedido_de_script(["a.exe", "--outra", "x.py"]))
+
+    def test_comando_pelo_codigo_fonte(self):
+        from painel.execucao import montar_comando
+        with mock.patch("painel.execucao.instalado", return_value=False):
+            cmd = montar_comando("s.py", ["a"])
+        self.assertEqual(cmd[1:], ["-u", "s.py", "a"])
+
+    def test_comando_instalado_usa_o_executor(self):
+        from painel.execucao import montar_comando
+        with mock.patch("painel.execucao.instalado", return_value=True), \
+                mock.patch("painel.execucao.caminho_executor", return_value="E.exe"):
+            self.assertEqual(montar_comando("s.py", ["a"]), ["E.exe", "--rodar-script", "s.py", "a"])
+            with self.assertRaises(OSError):
+                montar_comando("s.py", [], comando=["-m", "pip"])
+
+    def test_rodar_script_devolve_o_codigo_de_saida(self):
+        from painel.executor import rodar_script
+        pasta = _apoio.pasta_temporaria(self)
+        script = os.path.join(pasta, "s.py")
+        with open(script, "w", encoding="utf-8") as f:
+            f.write("import sys\nassert sys.argv[1:] == ['x']\nsys.exit(2)\n")
+        with mock.patch("sys.argv", []), mock.patch("sys.path", list(os.sys.path)):
+            self.assertEqual(rodar_script(script, ["x"]), 2)

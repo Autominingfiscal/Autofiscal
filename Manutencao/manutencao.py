@@ -152,6 +152,10 @@ def _copiar_arvore(origem, alvo, res, so_codigo=False):
 # =============================================================================
 def testes():
     pasta = os.path.join(RAIZ, "tests")
+    if not os.path.isdir(pasta):
+        print("Os testes nao vem no instalador. Rode-os na pasta de desenvolvimento,")
+        print("onde esta o codigo-fonte (Rodar testes.bat).")
+        return 1
     suite = unittest.defaultTestLoader.discover(pasta, top_level_dir=pasta)
     resultado = unittest.TextTestRunner(stream=sys.stdout, verbosity=1).run(suite)
     print()

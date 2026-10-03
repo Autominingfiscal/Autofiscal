@@ -21,3 +21,6 @@ conferir_issqn_config.json
 
 # Capturas de tela
 Claude outputs/
+
+# Gerados pelo gerar_instalador.py
+distribuicao/saida/

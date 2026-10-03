@@ -9,6 +9,7 @@ from tkinter import filedialog, messagebox, simpledialog, ttk
 from . import VERSAO
 from .caminhos import caminho_do_usuario, existe, gravar_estado, ler_estado
 from .execucao import Execucao
+from .executor import instalado
 from .ferramentas import MARCADOR, carregar_todas
 from .ini import DocumentoIni
 
@@ -23,6 +24,7 @@ COR = {
 FONTE = "Segoe UI" if os.name == "nt" else "DejaVu Sans"
 MONO = "Consolas" if os.name == "nt" else "DejaVu Sans Mono"
 MAX_LINHAS_LOG = 4000
+ICONE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "autofiscal.ico")
 
 PALAVRAS_ERRO = ("ERRO", "Traceback", "Error", "NAO DEU", "NÃO DEU", "Exception")
 PALAVRAS_AVISO = ("ATEN", "AVISO", "Aviso", "pendente", "PENDENTE", "Falta")
@@ -95,7 +97,11 @@ class PaginaFerramenta(tk.Frame):
         if f.erro:
             avisos.append(f.erro)
         falta = f.faltando()
-        if falta:
+        if falta and instalado():
+            avisos.append("Falta a biblioteca: " + ", ".join(falta)
+                          + ".  Ela nao veio no instalador: gere o instalador de novo com ela.")
+            falta = []
+        elif falta:
             avisos.append("Falta instalar: " + ", ".join(falta)
                           + ".  Clique em \"Instalar\" ou rode no Prompt:  pip install --user "
                           + " ".join(falta))
@@ -496,6 +502,7 @@ class App(tk.Tk):
         super().__init__()
         self.raiz = raiz
         self.title("Autofiscal")
+        self._icone()
         self.geometry("1180x760")
         self.minsize(960, 620)
         self.configure(bg=COR["fundo"])
@@ -514,6 +521,16 @@ class App(tk.Tk):
         self._carregar()
         self.protocol("WM_DELETE_WINDOW", self.fechar)
         self.after(100, self._ciclo)
+
+    def _icone(self):
+        """Logo AF no lugar da pena do Tk. default= vale tambem para as janelas
+        de dialogo abertas pelo painel."""
+        if os.name != "nt" or not os.path.isfile(ICONE):
+            return
+        try:
+            self.iconbitmap(default=ICONE)
+        except tk.TclError:
+            pass
 
     def _estilos(self):
         s = ttk.Style(self)
@@ -670,6 +687,11 @@ def iniciar(raiz):
         try:
             import ctypes
             ctypes.windll.shcore.SetProcessDpiAwareness(1)      # letras nítidas
+        except Exception:
+            pass
+        try:
+            # barra de tarefas com o icone do Autofiscal, e nao o do pythonw
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Autofiscal.Painel")
         except Exception:
             pass
     app = App(raiz)

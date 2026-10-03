@@ -3,14 +3,26 @@
 
 Dois cliques neste arquivo (ou em "Abrir Autofiscal.bat") abrem a janela.
 Cada subpasta com um arquivo ferramenta.json aparece como uma ferramenta.
+
+Instalado (Autofiscal.exe), este mesmo arquivo tambem roda os scripts das
+ferramentas: veja painel/executor.py.
 """
 
 import os
 import sys
 import traceback
 
-RAIZ = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, RAIZ)
+if getattr(sys, "frozen", False):
+    RAIZ = os.path.dirname(os.path.abspath(sys.executable))
+else:
+    RAIZ = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, RAIZ)
+
+from painel.executor import pedido_de_script, rodar_script  # noqa: E402
+
+pedido = pedido_de_script(sys.argv)
+if pedido:
+    sys.exit(rodar_script(*pedido))
 
 try:
     from painel.app import iniciar

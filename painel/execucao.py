@@ -7,6 +7,8 @@ import subprocess
 import sys
 import threading
 
+from .executor import OPCAO, caminho_executor, instalado
+
 CREATE_NO_WINDOW = 0x08000000
 
 
@@ -19,6 +21,17 @@ def python_com_console():
         if os.path.exists(candidato):
             return candidato
     return exe
+
+
+def montar_comando(script, args, comando=None):
+    """Instalado (.exe) nao ha python.exe: quem roda o script e o executor."""
+    if instalado():
+        if comando:
+            raise OSError("o Autofiscal instalado nao roda comandos do Python (ex.: pip)")
+        return [caminho_executor(), OPCAO, script] + list(args)
+    if comando:
+        return [python_com_console()] + list(comando)
+    return [python_com_console(), "-u", script] + list(args)
 
 
 class Execucao:
@@ -40,10 +53,7 @@ class Execucao:
         env = dict(os.environ)
         env.update({"PYTHONIOENCODING": "utf-8", "PYTHONUNBUFFERED": "1",
                     "PYTHONUTF8": "1", "AUTOFISCAL": "1"})
-        if self.comando:
-            cmd = [python_com_console()] + list(self.comando)
-        else:
-            cmd = [python_com_console(), "-u", self.acao.caminho_script] + list(self.args)
+        cmd = montar_comando(self.acao.caminho_script, self.args, self.comando)
         extra = {}
         if os.name == "nt":
             extra["creationflags"] = CREATE_NO_WINDOW

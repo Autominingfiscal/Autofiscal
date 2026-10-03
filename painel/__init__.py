@@ -4,4 +4,4 @@ Cada subpasta da Autofiscal que tiver um arquivo `ferramenta.json` aparece
 no painel. Veja "COMO ADICIONAR UMA FERRAMENTA.md" na pasta principal.
 """
 
-VERSAO = "1.0"
+VERSAO = "1.1.0"
