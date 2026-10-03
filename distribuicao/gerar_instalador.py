@@ -21,6 +21,7 @@ Passos:
 
 import argparse
 import ast
+import fnmatch
 import importlib.util
 import os
 import shutil
@@ -54,11 +55,57 @@ def versao():
 
 
 def arquivos_do_projeto():
-    """Arquivos do projeto, sem o que o .gitignore deixa de fora (planilhas, logs, backups)."""
-    saida = subprocess.run(["git", "-c", "core.quotepath=off", "ls-files", "-z", "--cached",
-                            "--others", "--exclude-standard"],
-                           cwd=RAIZ, capture_output=True, check=True).stdout
-    return [p for p in saida.decode("utf-8").split("\0") if p]
+    """Arquivos do projeto, sem o que o .gitignore deixa de fora (planilhas, logs, backups).
+
+    Pergunta ao git. Sem git (projeto baixado em ZIP do GitHub, ou git nao
+    instalado), le o .gitignore e percorre a pasta."""
+    try:
+        saida = subprocess.run(["git", "-c", "core.quotepath=off", "ls-files", "-z", "--cached",
+                                "--others", "--exclude-standard"],
+                               cwd=RAIZ, capture_output=True, check=True).stdout
+        return [p for p in saida.decode("utf-8").split("\0") if p]
+    except (OSError, subprocess.CalledProcessError):
+        print("(sem git nesta pasta: usando o .gitignore para escolher os arquivos)")
+        return arquivos_sem_git()
+
+
+def regras_do_gitignore():
+    regras = []
+    try:
+        with open(os.path.join(RAIZ, ".gitignore"), encoding="utf-8") as f:
+            linhas = f.read().splitlines()
+    except OSError:
+        return regras
+    for linha in linhas:
+        linha = linha.strip()
+        if not linha or linha.startswith(("#", "!")):
+            continue
+        so_pasta = linha.endswith("/")
+        linha = linha.strip("/")
+        # com / no meio vale para o caminho a partir da raiz; sem, para o nome em qualquer pasta
+        regras.append((linha, so_pasta, "/" in linha))
+    return regras
+
+
+def ignorado(rel, eh_pasta, regras):
+    nome = rel.rsplit("/", 1)[-1]
+    for padrao, so_pasta, pelo_caminho in regras:
+        if so_pasta and not eh_pasta:
+            continue
+        if fnmatch.fnmatchcase(rel if pelo_caminho else nome, padrao):
+            return True
+    return False
+
+
+def arquivos_sem_git():
+    regras = regras_do_gitignore() + [(".git", True, False)]
+    achados = []
+    for raiz, pastas, arquivos in os.walk(RAIZ):
+        base = os.path.relpath(raiz, RAIZ).replace("\\", "/")
+        base = "" if base == "." else base + "/"
+        pastas[:] = sorted(p for p in pastas if not ignorado(base + p, True, regras))
+        achados += [base + a for a in sorted(arquivos) if not ignorado(base + a, False, regras)]
+    return achados
 
 
 def vai_junto(rel):
