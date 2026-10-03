@@ -25,12 +25,66 @@ do Windows, em `%APPDATA%\Autofiscal`. Assim, um usuário não atrapalha o outro
 
 ## Adicionar uma ferramenta nova
 
-1. Crie uma subpasta dentro de `Autofiscal`, por exemplo `Autofiscal\Nova ferramenta`.
-2. Coloque nela o script `.py`.
-3. Crie nela um arquivo **`ferramenta.json`** (modelo abaixo).
-4. No painel, clique em **Recarregar ferramentas**.
+1. No painel, abra **Manutenção** e clique em **Nova ferramenta**. Digite o nome
+   que vai aparecer no painel. A pasta é criada a partir de `_modelo_ferramenta`,
+   já com um script de exemplo e o `ferramenta.json`.
+2. Clique em **Recarregar ferramentas**. A ferramenta nova já aparece na lista.
+3. Troque o `exemplo.py` pelo script da ferramenta e ajuste os botões no
+   `ferramenta.json` (modelo abaixo). **Mantenha o bloco "comum" do começo do script.**
+4. Em **Manutenção**, clique em **Rodar testes**.
+
+Também dá para fazer à mão: crie uma subpasta, copie para ela o conteúdo de
+`_modelo_ferramenta` e edite.
 
 Pastas que começam com `_` são ignoradas. Por isso `_modelo_ferramenta` não aparece no painel.
+
+---
+
+## A pasta `comum`: código que todas as ferramentas usam
+
+O que mais de uma ferramenta precisa fica **uma vez só** na pasta `comum`. Se
+precisar disso numa ferramenta nova, use daqui. Não copie para dentro da ferramenta.
+
+| Módulo | O que tem |
+|---|---|
+| `comum.caminhos` | `caminho_do_usuario` (`%OneDrive%`, caminho de outro usuário, relativo) e `existe` (aceita `*`) |
+| `comum.numeros` | `numero_br`: `"R$ 1.234,56"`, `"14,80"`, `"(10,00)"` viram número; texto e vazio viram `None` |
+| `comum.texto` | `norm` (compara cabeçalho, placa e modelo sem acento nem pontuação) e `sem_acento` |
+| `comum.arquivos` | `ler_ini` e `ler_texto`: aceitam arquivo salvo em UTF-8 ou ANSI pelo Bloco de Notas |
+| `comum.nfe` | chave de acesso: `dv_confere`, `nota_da_chave`, `modelo_da_chave`, `formatar` |
+| `comum.pesagem` | `peso_alvo` por modelo e `faixa_de_aceite` (vermelho, amarelo, verde ou dentro) |
+| `comum.pdf` | peças para ler texto de PDF sem biblioteca: `streams`, `descompactar`, `desescapar` |
+
+Para usar, o script começa com o **bloco "comum"** (já vem no modelo). Ele
+procura a pasta `comum` ao lado do script e, se não achar, na pasta Autofiscal,
+logo acima. Depois é só importar:
+
+```python
+from comum.numeros import numero_br
+from comum.caminhos import caminho_do_usuario
+```
+
+**Mudou algo na pasta `comum`?** Todas as ferramentas usam esse código. Rode os
+testes antes de usar (**Manutenção > Rodar testes** ou `Rodar testes.bat`). Os
+testes também acusam se alguma ferramenta voltar a ter uma cópia de uma função
+que já está na `comum`.
+
+---
+
+## Usar uma ferramenta em outro computador
+
+Algumas ferramentas rodam em outro PC, sem o resto do Autofiscal (por
+exemplo, o Lançador no computador da balança).
+
+1. Em **Manutenção**, clique em **Exportar ferramenta**.
+2. Escolha a pasta da ferramenta e depois o destino (pendrive, rede ou a pasta do outro PC).
+3. Ela é copiada **com a pasta `comum` dentro** e roda sozinha lá.
+
+**Para atualizar** depois de uma mudança, exporte de novo para o mesmo destino:
+
+- o código (`.py`, `.bat`, `.md`, `ferramenta.json`) é substituído pela versão nova;
+- as configurações que já estiverem lá (`.ini` e outros `.json`) são **mantidas**;
+- planilhas, PDFs, logs e a pasta `Backup` nunca são copiados.
 
 ### Modelo de `ferramenta.json`
 
@@ -108,5 +162,5 @@ Pastas que começam com `_` são ignoradas. Por isso `_modelo_ferramenta` não a
   ```
 
 - **Detectar o painel:** o painel define a variável de ambiente `AUTOFISCAL=1`, caso o script precise saber se está rodando dentro dele.
-- **Caminhos:** use a função `caminho_do_usuario` (em `painel\caminhos.py`), para
+- **Caminhos:** use a função `caminho_do_usuario` (em `comum\caminhos.py`), para
   que os caminhos funcionem para qualquer usuário do Windows.

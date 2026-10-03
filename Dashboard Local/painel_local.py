@@ -16,18 +16,37 @@ Uso:  python painel_local.py        (ou dois cliques em iniciar_painel.bat)
 Requisito: openpyxl (já instalado).
 """
 
+# --- pasta "comum" do Autofiscal ---------------------------------------------
+# Fica na pasta Autofiscal, logo acima desta ferramenta, ou dentro dela quando a
+# ferramenta foi exportada para outro PC (Manutencao > Exportar ferramenta).
+import os
+import sys
+
+for _pasta in (os.path.dirname(os.path.abspath(__file__)),
+               os.path.dirname(os.path.dirname(os.path.abspath(__file__)))):
+    if os.path.isdir(os.path.join(_pasta, "comum")):
+        sys.path.insert(0, _pasta)
+        break
+else:
+    sys.exit("Nao achei a pasta 'comum' do Autofiscal, nem nesta pasta nem na de cima.\n"
+             "Para usar a ferramenta fora da pasta Autofiscal, copie-a pela ferramenta\n"
+             "Manutencao > Exportar ferramenta, que leva a pasta 'comum' junto.")
+# -----------------------------------------------------------------------------
+
 import argparse
-import configparser
 import datetime as dt
 import glob
 import json
-import os
 import re
 import shutil
-import sys
 import tempfile
 import time
-import unicodedata
+
+from comum.arquivos import ler_ini
+from comum.caminhos import caminho_do_usuario
+from comum.pesagem import faixa_de_aceite
+from comum.pesagem import peso_alvo as _peso_alvo
+from comum.texto import norm
 
 PASTA = os.path.dirname(os.path.abspath(__file__))
 ARQ_CONFIG = os.path.join(PASTA, "painel_config.ini")
@@ -65,14 +84,6 @@ LS 4 EIXOS = 58500
 # =============================================================================
 # Configuração
 # =============================================================================
-def norm(texto):
-    if texto is None:
-        return ""
-    s = unicodedata.normalize("NFKD", str(texto))
-    s = "".join(c for c in s if not unicodedata.combining(c))
-    return re.sub(r"[^A-Z0-9]", "", s.upper())
-
-
 def carregar_config():
     if not os.path.exists(ARQ_CONFIG):
         texto = CONFIG_PADRAO
@@ -80,10 +91,8 @@ def carregar_config():
         for nome in ("etapa3_config.ini", "etapa2_config.ini", "etapa1_config.ini"):
             p = os.path.join(PASTA, nome)
             if os.path.exists(p):
-                cp = configparser.ConfigParser(interpolation=None)
                 try:
-                    with open(p, encoding="utf-8-sig") as f:
-                        cp.read_file(f)
+                    cp = ler_ini(p)
                 except Exception:
                     continue
                 g = cp["geral"] if cp.has_section("geral") else {}
@@ -101,13 +110,7 @@ def carregar_config():
             os.startfile(ARQ_CONFIG)
         except Exception:
             pass
-    cp = configparser.ConfigParser(interpolation=None)
-    try:
-        with open(ARQ_CONFIG, encoding="utf-8-sig") as f:
-            cp.read_file(f)
-    except UnicodeDecodeError:
-        with open(ARQ_CONFIG, encoding="cp1252") as f:
-            cp.read_file(f)
+    cp = ler_ini(ARQ_CONFIG)
     g = cp["geral"]
     h, m = (g.get("inicio_turno_vespertino", "12:00").strip() + ":0").split(":")[:2]
     alvos = {}
@@ -132,54 +135,6 @@ def carregar_config():
 # =============================================================================
 # Leitura da planilha
 # =============================================================================
-
-# =============================================================================
-# Caminhos que funcionam para qualquer usuario do Windows
-# =============================================================================
-# Existe uma copia desta funcao em cada ferramenta (cada uma roda sozinha).
-# Mudou aqui? Mude nas outras: tests/test_copias_iguais.py confere.
-def caminho_do_usuario(texto, base=None):
-    """Ajusta um caminho do config para o usuario que esta rodando o script.
-
-    - aceita variaveis do Windows: %USERPROFILE%, %OneDrive%, %USERNAME%, ~
-    - caminho relativo (ex.: ..\\Planilhas\\x.xlsx) vale a partir de `base`
-    - caminho de OUTRO usuario (C:\\Users\\fulano\\...) que nao existe aqui e
-      trocado pela pasta do usuario atual; a parte "OneDrive..." vira a
-      OneDrive dele (mesmo que o nome seja "OneDrive - Empresa").
-    Assim ninguem precisa editar o config quando outra pessoa usa o script.
-    """
-    import glob as _glob
-
-    if not texto:
-        return texto
-    t = str(texto).strip().strip('"')
-    t = re.sub(r"%([^%]+)%", lambda m: os.environ.get(m.group(1), m.group(0)), t)
-    t = os.path.expanduser(t)
-    if base and not os.path.isabs(t) and not t.startswith(("\\\\", "//")):
-        t = os.path.normpath(os.path.join(base, t))
-
-    def existe(c):
-        return bool(_glob.glob(c)) if any(x in c for x in "*?") else os.path.exists(c)
-
-    if existe(t):
-        return t
-    m = re.match(r"^[A-Za-z]:[\\/]+Users[\\/]+[^\\/]+[\\/]*(.*)$", t, re.I)
-    if not m:
-        return t
-    resto = m.group(1)
-    candidatos = []
-    partes = re.split(r"[\\/]+", resto, maxsplit=1)
-    for var in ("OneDrive", "OneDriveCommercial", "OneDriveConsumer"):
-        od = os.environ.get(var)
-        if od and partes[0].lower().startswith("onedrive"):
-            candidatos.append(os.path.join(od, partes[1]) if len(partes) > 1 else od)
-    candidatos.append(os.path.join(os.path.expanduser("~"), resto))
-    for c in candidatos:
-        if existe(c):
-            return c
-    return t
-
-
 def achar_planilha(cfg):
     padrao = caminho_do_usuario(cfg["planilha"], PASTA)
     if any(c in padrao for c in "*?"):
@@ -212,15 +167,7 @@ def numero(v):
 
 
 def peso_alvo(cfg, modelo):
-    m = norm(modelo)
-    if not m:
-        return None
-    if m in cfg["alvos"]:
-        return cfg["alvos"][m]
-    for k, v in cfg["alvos"].items():
-        if k and (k in m or m in k):
-            return v
-    return None
+    return _peso_alvo(cfg["alvos"], modelo)
 
 
 def texto(v):
@@ -282,9 +229,8 @@ def ler_planilha(caminho, cfg):
             elif not alvo:
                 status = "semalvo"
             else:
-                dif = sai - alvo
-                status = ("vermelho" if dif > cfg["tol_exc"] else "amarelo" if dif > 0
-                          else "verde" if -dif > cfg["tol_sub"] else "dentro")
+                # a mesma regra do Lancador (comum/pesagem.py)
+                status = faixa_de_aceite(sai, alvo, cfg["tol_exc"], cfg["tol_sub"])
             dif_min = lambda a, b: (b - a + 1440) % 1440 if (a is not None and b is not None) else None
             linhas.append({
                 "ticket": int(ticket), "nf": int(numero(get("nf"))) if numero(get("nf")) else None,
@@ -321,20 +267,19 @@ class Dados:
         self.cfg, self.chave, self.json, self.erro = cfg, None, None, None
 
     def obter(self):
-        if True:
-            caminho = achar_planilha(self.cfg)
-            if not caminho:
-                self.erro = f"Planilha não encontrada: {self.cfg['planilha']}"
-                return self.json, self.erro
-            chave = (caminho, os.path.getmtime(caminho), os.path.getsize(caminho))
-            if chave != self.chave or self.json is None:
-                try:
-                    self.json = json.dumps(ler_planilha(caminho, self.cfg), ensure_ascii=False)
-                    self.chave, self.erro = chave, None
-                    print(f"[{dt.datetime.now():%H:%M:%S}] Planilha lida: {os.path.basename(caminho)}", flush=True)
-                except Exception as exc:   # ex.: arquivo no meio do salvamento -> usa a leitura anterior
-                    self.erro = f"Não consegui ler a planilha agora ({type(exc).__name__}: {exc})"
+        caminho = achar_planilha(self.cfg)
+        if not caminho:
+            self.erro = f"Planilha não encontrada: {self.cfg['planilha']}"
             return self.json, self.erro
+        chave = (caminho, os.path.getmtime(caminho), os.path.getsize(caminho))
+        if chave != self.chave or self.json is None:
+            try:
+                self.json = json.dumps(ler_planilha(caminho, self.cfg), ensure_ascii=False)
+                self.chave, self.erro = chave, None
+                print(f"[{dt.datetime.now():%H:%M:%S}] Planilha lida: {os.path.basename(caminho)}", flush=True)
+            except Exception as exc:   # ex.: arquivo no meio do salvamento -> usa a leitura anterior
+                self.erro = f"Não consegui ler a planilha agora ({type(exc).__name__}: {exc})"
+        return self.json, self.erro
 
 
 ARQ_PAINEL = os.path.join(PASTA, "painel_expedicao.html")

@@ -1,6 +1,6 @@
 {
   "nome": "Modelo de ferramenta",
-  "descricao": "Copie esta pasta, tire o _ do nome e troque os textos.",
+  "descricao": "Modelo usado por Manutenção > Nova ferramenta. Não aparece no painel.",
   "ordem": 90,
   "acoes": [
     {"rotulo": "Rodar", "script": "exemplo.py", "principal": true,

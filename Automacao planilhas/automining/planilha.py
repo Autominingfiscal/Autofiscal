@@ -10,6 +10,8 @@ from pathlib import Path
 from openpyxl.formatting.formatting import ConditionalFormattingList
 from openpyxl.utils import get_column_letter
 
+from comum.numeros import numero_br
+
 from .refs import deslocar_faixa, deslocar_formula
 
 MARCA_RODAPE = "VOLUME EMBARCADO"
@@ -222,29 +224,9 @@ def achar_rodape(ws, coluna=4, marca=MARCA_RODAPE, ate=5000):
     return 0
 
 
-def como_numero(valor):
-    """Devolve float se a celula tiver numero utilizavel, senao None.
-
-    Numero de verdade passa direto. Texto e lido no jeito brasileiro:
-    "R$ 1.234,56", "14,80" e "1.234" viram 1234.56, 14.8 e 1234.
-    """
-    if isinstance(valor, bool) or valor is None:
-        return None
-    if isinstance(valor, (int, float)):
-        return float(valor)
-    if isinstance(valor, str):
-        texto = valor.replace("R$", "").replace("\u00a0", "").replace(" ", "").strip()
-        if not texto or texto.startswith("="):
-            return None
-        if "," in texto:
-            texto = texto.replace(".", "").replace(",", ".")
-        elif re.fullmatch(r"-?\d{1,3}(\.\d{3})+", texto):
-            texto = texto.replace(".", "")
-        try:
-            return float(texto)
-        except ValueError:
-            return None
-    return None
+# Numero escrito no jeito brasileiro ("R$ 1.234,56" -> 1234.56): mora em
+# comum/numeros.py. O nome como_numero continua valendo aqui.
+como_numero = numero_br
 
 
 def como_data(valor):

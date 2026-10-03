@@ -1,0 +1,29 @@
+{
+  "nome": "Manutenção",
+  "descricao": "Cria uma ferramenta nova a partir do modelo, exporta uma ferramenta para rodar em outro computador (ou atualiza a cópia que já está lá) e roda os testes automáticos.",
+  "ordem": 999,
+  "ajuda": "../COMO ADICIONAR UMA FERRAMENTA.md",
+  "acoes": [
+    {
+      "rotulo": "Nova ferramenta",
+      "script": "manutencao.py",
+      "args": ["nova", "{texto:Nome da nova ferramenta (como vai aparecer no painel)}"],
+      "principal": true,
+      "descricao": "Cria a pasta da ferramenta com o modelo pronto. Depois clique em Recarregar ferramentas."
+    },
+    {
+      "rotulo": "Exportar ferramenta",
+      "script": "manutencao.py",
+      "args": ["exportar",
+               "{pasta:Escolha a pasta da ferramenta que vai ser exportada}",
+               "{pasta:Escolha para onde copiar (pendrive, rede ou pasta do outro PC)}"],
+      "descricao": "Copia a ferramenta com a pasta comum, para rodar sozinha. Na segunda vez atualiza o código e mantém as configurações de lá."
+    },
+    {
+      "rotulo": "Rodar testes",
+      "script": "manutencao.py",
+      "args": ["testes"],
+      "descricao": "Confere todas as ferramentas. Rode depois de mudar qualquer código, principalmente na pasta comum."
+    }
+  ]
+}

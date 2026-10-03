@@ -15,9 +15,24 @@ Como usar:
 Requer apenas Python 3 + openpyxl.
 """
 
+# --- pasta "comum" do Autofiscal ---------------------------------------------
+# Fica na pasta Autofiscal, logo acima desta ferramenta, ou dentro dela quando a
+# ferramenta foi exportada para outro PC (Manutencao > Exportar ferramenta).
 import os
-import re
 import sys
+
+for _pasta in (os.path.dirname(os.path.abspath(__file__)),
+               os.path.dirname(os.path.dirname(os.path.abspath(__file__)))):
+    if os.path.isdir(os.path.join(_pasta, "comum")):
+        sys.path.insert(0, _pasta)
+        break
+else:
+    sys.exit("Nao achei a pasta 'comum' do Autofiscal, nem nesta pasta nem na de cima.\n"
+             "Para usar a ferramenta fora da pasta Autofiscal, copie-a pela ferramenta\n"
+             "Manutencao > Exportar ferramenta, que leva a pasta 'comum' junto.")
+# -----------------------------------------------------------------------------
+
+import re
 import glob
 from datetime import datetime
 from collections import defaultdict
@@ -31,6 +46,8 @@ except ImportError:
     if sys.stdin is not None and sys.stdin.isatty():
         input("Enter para sair...")
     sys.exit(1)
+
+from comum.numeros import numero_br
 
 
 # =====================================================================
@@ -84,25 +101,9 @@ def col(letra):
 
 
 def para_numero(v):
-    """Converte o conteúdo da célula em número. ' - ', vazio, texto -> 0."""
-    if v is None:
-        return 0.0
-    if isinstance(v, bool):
-        return 0.0
-    if isinstance(v, (int, float)):
-        return float(v)
-    s = str(v).strip().replace("R$", "").replace(" ", "")
-    if s == "" or set(s) <= {"-"}:
-        return 0.0
-    negativo = s.startswith("(") and s.endswith(")")
-    s = s.strip("()")
-    if "," in s:                       # formato brasileiro 1.234,56
-        s = s.replace(".", "").replace(",", ".")
-    try:
-        n = float(s)
-        return -n if negativo else n
-    except ValueError:
-        return 0.0
+    """Converte o conteúdo da célula em número. ' - ', vazio, texto -> 0.
+    Leitura do número em comum/numeros.py ("R$ 1.234,56", "(10,00)"...)."""
+    return numero_br(v) or 0.0
 
 
 def chave_nf(v):

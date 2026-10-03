@@ -1,13 +1,15 @@
 """Extracao da chave de acesso de dentro do PDF da nota.
 
-Nao depende de biblioteca nenhuma: usa o zlib, que ja vem com o Python.
-A logica e a mesma do modulo VBA - descompactar os streams do PDF, juntar o
-texto e procurar a sequencia de 44 digitos, gravando so o que passar nas duas
-conferencias.
+Nao depende de biblioteca nenhuma. A logica e a mesma do modulo VBA -
+descompactar os streams do PDF, juntar o texto e procurar a sequencia de 44
+digitos, gravando so o que passar nas duas conferencias. As pecas de baixo
+nivel (streams, zlib, escapes) e a chave da NF-e moram em comum/.
 """
 
 import re
-import zlib
+
+from comum import pdf as pdfbase
+from comum.nfe import dv_confere, formatar, nota_da_chave  # noqa: F401  (usados por chaves.py)
 
 ROTULO = "CHAVE DE ACESSO"
 
@@ -15,55 +17,8 @@ ROTULO = "CHAVE DE ACESSO"
 # ------------------------------------------------------------ texto do PDF --
 def extrair_texto(caminho):
     """Junta o texto dos streams do PDF. Devolve '' se nao der para ler."""
-    try:
-        with open(caminho, "rb") as f:
-            dados = f.read()
-    except OSError:
-        return ""
-
-    pedacos = []
-    for bruto in _streams(dados):
-        # stream sem compressao (alguns geradores de PDF nao comprimem): o
-        # texto ja esta legivel no proprio stream
-        conteudo = _descompactar(bruto) or bruto
-        if conteudo:
-            pedacos.append(_texto_do_conteudo(conteudo))
+    pedacos = [_texto_do_conteudo(c) for c in pdfbase.conteudos(pdfbase.ler_bytes(caminho))]
     return " ".join(p for p in pedacos if p)
-
-
-def _streams(dados):
-    """O conteudo de cada par stream/endstream do arquivo."""
-    pos = 0
-    while True:
-        ini = dados.find(b"stream", pos)
-        if ini < 0:
-            return
-        corpo = ini + len(b"stream")
-        if dados[corpo : corpo + 2] == b"\r\n":
-            corpo += 2
-        elif dados[corpo : corpo + 1] in (b"\n", b"\r"):
-            corpo += 1
-
-        fim = dados.find(b"endstream", corpo)
-        if fim < 0:
-            return
-        # todo stream vai para o zlib, com ou sem /FlateDecode: o que nao for
-        # zlib volta vazio em _descompactar
-        yield dados[corpo:fim]
-        pos = fim + len(b"endstream")
-
-
-def _descompactar(bruto):
-    try:
-        return zlib.decompress(bruto)
-    except zlib.error:
-        pass
-    # stream truncado: aproveita o que der
-    try:
-        d = zlib.decompressobj()
-        return d.decompress(bruto)
-    except zlib.error:
-        return b""
 
 
 _TEXTO = re.compile(rb"\((?:\\.|[^\\()])*\)|<[0-9A-Fa-f\s]+>")
@@ -90,60 +45,11 @@ def _texto_do_conteudo(conteudo):
             else:
                 saida.append(bytes_.decode("latin-1", "ignore"))
         else:
-            saida.append(_literal(bruto[1:-1]))
+            saida.append(pdfbase.desescapar(bruto[1:-1]).decode("latin-1"))
     return " ".join(saida)
 
 
-_ESCAPES = {b"n": "\n", b"r": "\r", b"t": "\t", b"b": "\b", b"f": "\f"}
-
-
-def _literal(bruto):
-    saida = []
-    i = 0
-    while i < len(bruto):
-        ch = bruto[i : i + 1]
-        if ch == b"\\" and i + 1 < len(bruto):
-            prox = bruto[i + 1 : i + 2]
-            if prox in _ESCAPES:
-                saida.append(_ESCAPES[prox])
-                i += 2
-                continue
-            if prox.isdigit():
-                oct_ = bruto[i + 1 : i + 4]
-                oct_ = oct_[: len(oct_) - len(oct_.lstrip(b"01234567")) or 3]
-                try:
-                    saida.append(chr(int(oct_, 8)))
-                    i += 1 + len(oct_)
-                    continue
-                except ValueError:
-                    pass
-            saida.append(prox.decode("latin-1", "ignore"))
-            i += 2
-            continue
-        saida.append(ch.decode("latin-1", "ignore"))
-        i += 1
-    return "".join(saida)
-
-
 # ----------------------------------------------------------- a chave em si --
-def dv_confere(chave):
-    """Digito verificador da chave da NF-e: modulo 11, pesos 2..9 da direita."""
-    soma = 0
-    peso = 2
-    for ch in reversed(chave[:43]):
-        soma += int(ch) * peso
-        peso = peso + 1 if peso < 9 else 2
-    dv = 11 - (soma % 11)
-    if dv >= 10:
-        dv = 0
-    return dv == int(chave[43])
-
-
-def nota_da_chave(chave):
-    """O numero da nota vem embutido na chave, nas posicoes 26 a 34."""
-    return int(chave[25:34])
-
-
 def aceita(chave, nf_esperada=None):
     """As duas conferencias que autorizam gravar a chave.
 
@@ -158,11 +64,6 @@ def aceita(chave, nf_esperada=None):
         if dentro != int(nf_esperada):
             return False, f"a nota dentro da chave e {dentro}, esperava {int(nf_esperada)}"
     return True, ""
-
-
-def formatar(chave):
-    """11 grupos de 4 digitos, como sempre foi digitado na planilha."""
-    return " ".join(chave[i : i + 4] for i in range(0, 44, 4))
 
 
 _SEQ = re.compile(r"[\d\s]{44,}")

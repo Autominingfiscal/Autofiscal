@@ -7,7 +7,23 @@ ou pelo prompt:  python preencher_chaves.py
 Para testar um PDF isolado:  python preencher_chaves.py "caminho\\do\\arquivo.pdf" 19007
 """
 
+# --- pasta "comum" do Autofiscal ---------------------------------------------
+# Fica na pasta Autofiscal, logo acima desta ferramenta, ou dentro dela quando a
+# ferramenta foi exportada para outro PC (Manutencao > Exportar ferramenta).
+import os
 import sys
+
+for _pasta in (os.path.dirname(os.path.abspath(__file__)),
+               os.path.dirname(os.path.dirname(os.path.abspath(__file__)))):
+    if os.path.isdir(os.path.join(_pasta, "comum")):
+        sys.path.insert(0, _pasta)
+        break
+else:
+    sys.exit("Nao achei a pasta 'comum' do Autofiscal, nem nesta pasta nem na de cima.\n"
+             "Para usar a ferramenta fora da pasta Autofiscal, copie-a pela ferramenta\n"
+             "Manutencao > Exportar ferramenta, que leva a pasta 'comum' junto.")
+# -----------------------------------------------------------------------------
+
 from pathlib import Path
 
 from automining.arranque import checar

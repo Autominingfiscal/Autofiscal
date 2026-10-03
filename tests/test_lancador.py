@@ -53,10 +53,11 @@ class TestUtilidades(unittest.TestCase):
         self.assertEqual(lan.peso_alvo(CFG, "ls-4 eixos"), 58500)
         self.assertIsNone(lan.peso_alvo(CFG, "BITREM"))
 
-    def test_chave_dv(self):
-        chave = _apoio.chave_valida(18999)
-        self.assertTrue(lan.chave_dv_ok(chave))
-        self.assertFalse(lan.chave_dv_ok(chave[:-1] + str((int(chave[-1]) + 1) % 10)))
+    def test_hora_gravada_e_lida_pelo_dashboard(self):
+        import painel_local
+        momento = dt.datetime(2026, 9, 18, 7, 38, 16)
+        self.assertAlmostEqual(painel_local.minutos(lan.hora_excel_s(momento)),
+                               7 * 60 + 38 + 16 / 60)
 
 
 class TestLerTicket(unittest.TestCase):

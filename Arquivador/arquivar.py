@@ -35,19 +35,35 @@ Uso:
 Codigos de saida: 0 tudo certo | 1 erro | 2 terminou com pendencias
 """
 
+# --- pasta "comum" do Autofiscal ---------------------------------------------
+# Fica na pasta Autofiscal, logo acima desta ferramenta, ou dentro dela quando a
+# ferramenta foi exportada para outro PC (Manutencao > Exportar ferramenta).
+import os
+import sys
+
+for _pasta in (os.path.dirname(os.path.abspath(__file__)),
+               os.path.dirname(os.path.dirname(os.path.abspath(__file__)))):
+    if os.path.isdir(os.path.join(_pasta, "comum")):
+        sys.path.insert(0, _pasta)
+        break
+else:
+    sys.exit("Nao achei a pasta 'comum' do Autofiscal, nem nesta pasta nem na de cima.\n"
+             "Para usar a ferramenta fora da pasta Autofiscal, copie-a pela ferramenta\n"
+             "Manutencao > Exportar ferramenta, que leva a pasta 'comum' junto.")
+# -----------------------------------------------------------------------------
+
 import argparse
 import csv
 import hashlib
 import io
 import json
-import os
 import re
 import shutil
-import sys
 import unicodedata
-import zlib
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+
+from comum import pdf as pdfbase
 
 VERSAO = "1.0"
 
@@ -180,54 +196,18 @@ _RX_NUM = r"[-+]?\d*\.?\d+"
 
 
 def _descomprimir_streams(bruto):
-    """Devolve o conteudo do PDF com os streams comprimidos ja abertos."""
+    """O conteudo do PDF com os streams comprimidos ja abertos ao final."""
     partes = [bruto.decode("latin-1")]
-    for m in re.finditer(rb"stream\r?\n", bruto):
-        ini = m.end()
-        fim = bruto.find(b"endstream", ini)
-        if fim <= ini:
-            continue
-        dados = bruto[ini:fim]
-        if not dados or (dados[0] & 0x0F) != 8:      # nao parece zlib
-            continue
-        try:
-            partes.append(zlib.decompress(dados).decode("latin-1"))
-        except zlib.error:
-            try:
-                partes.append(zlib.decompressobj().decompress(dados).decode("latin-1"))
-            except Exception:
-                pass
+    for s in pdfbase.streams(bruto):
+        aberto = pdfbase.descompactar(s)
+        if aberto:
+            partes.append(aberto.decode("latin-1"))
     return "\n".join(partes)
 
 
 def _texto_de_literal(s):
     """Resolve os escapes de uma string literal de PDF: \\( \\) \\\\ \\n \\251 ..."""
-    saida = []
-    i = 0
-    while i < len(s):
-        c = s[i]
-        if c == "\\" and i + 1 < len(s):
-            p = s[i + 1]
-            if p in "()\\":
-                saida.append(p); i += 2; continue
-            if p == "n": saida.append("\n"); i += 2; continue
-            if p == "r": saida.append("\r"); i += 2; continue
-            if p == "t": saida.append("\t"); i += 2; continue
-            if p.isdigit():
-                oct_ = ""
-                j = i + 1
-                while j < len(s) and len(oct_) < 3 and s[j].isdigit():
-                    oct_ += s[j]; j += 1
-                try:
-                    saida.append(chr(int(oct_, 8)))
-                except ValueError:
-                    pass
-                i = j
-                continue
-            saida.append(p); i += 2; continue
-        saida.append(c)
-        i += 1
-    return "".join(saida)
+    return pdfbase.desescapar(s.encode("latin-1")).decode("latin-1")
 
 
 def _hex_para_texto(h):

@@ -44,17 +44,39 @@ Uso:
 Requisitos: pywin32 e pypdf  (pip install pywin32 pypdf)
 """
 
+# --- pasta "comum" do Autofiscal ---------------------------------------------
+# Fica na pasta Autofiscal, logo acima desta ferramenta, ou dentro dela quando a
+# ferramenta foi exportada para outro PC (Manutencao > Exportar ferramenta).
+import os
+import sys
+
+for _pasta in (os.path.dirname(os.path.abspath(__file__)),
+               os.path.dirname(os.path.dirname(os.path.abspath(__file__)))):
+    if os.path.isdir(os.path.join(_pasta, "comum")):
+        sys.path.insert(0, _pasta)
+        break
+else:
+    sys.exit("Nao achei a pasta 'comum' do Autofiscal, nem nesta pasta nem na de cima.\n"
+             "Para usar a ferramenta fora da pasta Autofiscal, copie-a pela ferramenta\n"
+             "Manutencao > Exportar ferramenta, que leva a pasta 'comum' junto.")
+# -----------------------------------------------------------------------------
+
 import argparse
 import configparser
 import csv
 import datetime as dt
 import fnmatch
-import os
 import re
-import sys
 import time
 import traceback
-import unicodedata
+
+from comum import pdf as pdfbase
+from comum.arquivos import ler_ini, ler_texto
+from comum.caminhos import caminho_do_usuario
+from comum.nfe import dv_confere, modelo_da_chave, nota_da_chave
+from comum.pesagem import AMARELO, DENTRO, VERDE, VERMELHO, faixa_de_aceite
+from comum.pesagem import peso_alvo as _peso_alvo
+from comum.texto import norm, sem_acento
 
 PASTA_SCRIPT = os.path.dirname(os.path.abspath(__file__))
 ARQ_CONFIG = os.path.join(PASTA_SCRIPT, "etapa3_config.ini")
@@ -113,15 +135,6 @@ ALVOS_PADRAO = {"TRUCADO": 48500, "CANGURU": 50000, "VANDERLEIA": 53000, "LS 4 E
 # =============================================================================
 # Utilidades
 # =============================================================================
-def norm(texto):
-    """Maiúsculas, sem acento, só letras e números: 'PLACA DO \\nCAVALO' -> 'PLACADOCAVALO'."""
-    if texto is None:
-        return ""
-    s = unicodedata.normalize("NFKD", str(texto))
-    s = "".join(c for c in s if not unicodedata.combining(c))
-    return re.sub(r"[^A-Z0-9]", "", s.upper())
-
-
 def formatar_placa(placa):
     p = norm(placa)
     return f"{p[:3]}-{p[3:]}" if len(p) == 7 else (placa or "").strip()
@@ -159,62 +172,11 @@ def mostrar(msg, chave=None, repetir_apos=300):
 
 
 
-# =============================================================================
-# Caminhos que funcionam para qualquer usuario do Windows
-# =============================================================================
-# Existe uma copia desta funcao em cada ferramenta (cada uma roda sozinha).
-# Mudou aqui? Mude nas outras: tests/test_copias_iguais.py confere.
-def caminho_do_usuario(texto, base=None):
-    """Ajusta um caminho do config para o usuario que esta rodando o script.
-
-    - aceita variaveis do Windows: %USERPROFILE%, %OneDrive%, %USERNAME%, ~
-    - caminho relativo (ex.: ..\\Planilhas\\x.xlsx) vale a partir de `base`
-    - caminho de OUTRO usuario (C:\\Users\\fulano\\...) que nao existe aqui e
-      trocado pela pasta do usuario atual; a parte "OneDrive..." vira a
-      OneDrive dele (mesmo que o nome seja "OneDrive - Empresa").
-    Assim ninguem precisa editar o config quando outra pessoa usa o script.
-    """
-    import glob as _glob
-
-    if not texto:
-        return texto
-    t = str(texto).strip().strip('"')
-    t = re.sub(r"%([^%]+)%", lambda m: os.environ.get(m.group(1), m.group(0)), t)
-    t = os.path.expanduser(t)
-    if base and not os.path.isabs(t) and not t.startswith(("\\\\", "//")):
-        t = os.path.normpath(os.path.join(base, t))
-
-    def existe(c):
-        return bool(_glob.glob(c)) if any(x in c for x in "*?") else os.path.exists(c)
-
-    if existe(t):
-        return t
-    m = re.match(r"^[A-Za-z]:[\\/]+Users[\\/]+[^\\/]+[\\/]*(.*)$", t, re.I)
-    if not m:
-        return t
-    resto = m.group(1)
-    candidatos = []
-    partes = re.split(r"[\\/]+", resto, maxsplit=1)
-    for var in ("OneDrive", "OneDriveCommercial", "OneDriveConsumer"):
-        od = os.environ.get(var)
-        if od and partes[0].lower().startswith("onedrive"):
-            candidatos.append(os.path.join(od, partes[1]) if len(partes) > 1 else od)
-    candidatos.append(os.path.join(os.path.expanduser("~"), resto))
-    for c in candidatos:
-        if existe(c):
-            return c
-    return t
-
 
 def carregar_config():
     if not os.path.exists(ARQ_CONFIG) and os.path.exists(ARQ_CONFIG_ETAPA2):
         # aproveita TODO o ini da etapa 2 e só acrescenta a pasta das notas
-        try:
-            with open(ARQ_CONFIG_ETAPA2, encoding="utf-8-sig") as f:
-                texto = f.read()
-        except UnicodeDecodeError:
-            with open(ARQ_CONFIG_ETAPA2, encoding="cp1252") as f:
-                texto = f.read()
+        texto = ler_texto(ARQ_CONFIG_ETAPA2)
         bloco = ("\n; Pasta onde ficam as NOTAS FISCAIS (DANFE em PDF)\n"
                  "pasta_notas_fiscais = C:\\CAMINHO\\DA\\PASTA\\DAS\\NOTAS_FISCAIS\n")
         m = re.search(r"(?m)^pasta_tickets_completos\s*=.*$", texto)
@@ -232,9 +194,8 @@ def carregar_config():
         anterior = configparser.ConfigParser(interpolation=None)
         if os.path.exists(ARQ_CONFIG_ETAPA1):
             try:
-                with open(ARQ_CONFIG_ETAPA1, encoding="utf-8-sig") as f:
-                    anterior.read_file(f)
-            except (UnicodeDecodeError, configparser.Error):
+                anterior = ler_ini(ARQ_CONFIG_ETAPA1)
+            except configparser.Error:
                 anterior = configparser.ConfigParser(interpolation=None)
         ga = anterior["geral"] if anterior.has_section("geral") else {}
         texto = CONFIG_PADRAO.format(pasta=ga.get("pasta_tickets_tara", PASTA_SCRIPT),
@@ -255,13 +216,7 @@ def carregar_config():
             os.startfile(ARQ_CONFIG)       # abre no Bloco de Notas (Windows)
         except Exception:
             pass
-    cp = configparser.ConfigParser(interpolation=None)
-    try:
-        with open(ARQ_CONFIG, encoding="utf-8-sig") as f:
-            cp.read_file(f)
-    except UnicodeDecodeError:
-        with open(ARQ_CONFIG, encoding="cp1252") as f:
-            cp.read_file(f)
+    cp = ler_ini(ARQ_CONFIG)
     g = cp["geral"]
     hora = g.get("inicio_turno_vespertino", g.get("inicio_turno_2", "12:00"))
     h, m = (hora.strip() + ":0").split(":")[:2]
@@ -306,26 +261,8 @@ def gravar_log(resultado, arquivo, ticket="", aba="", linha="", obs=""):
 # =============================================================================
 _RE_TEXTO = re.compile(
     rb"/(F\d+)\s+([\d.]+)\s+Tf\s+(-?[\d.]+)\s+(-?[\d.]+)\s+Td\s*\(((?:\\.|[^\\)])*)\)\s*Tj", re.S)
-_ESC = {b"n": b"\n", b"r": b"\r", b"t": b"\t", b"b": b"\b", b"f": b"\f"}
-
-
 def _desescapar(raw):
-    out, i = bytearray(), 0
-    while i < len(raw):
-        c = raw[i:i + 1]
-        if c == b"\\" and i + 1 < len(raw):
-            n = raw[i + 1:i + 2]
-            m = re.match(rb"[0-7]{1,3}", raw[i + 1:])
-            if m:                               # \ddd octal ("\8" e "\9" nao sao octal)
-                out.append(int(m.group(0), 8) & 0xFF)
-                i += 1 + len(m.group(0))
-                continue
-            out += _ESC.get(n, n)
-            i += 2
-            continue
-        out += c
-        i += 1
-    return out.decode("cp1252", errors="replace")
+    return pdfbase.desescapar(raw).decode("cp1252", errors="replace")
 
 
 def _textos(dados):
@@ -609,16 +546,7 @@ TURNOS = {1: "MATUTINO", 2: "VESPERTINO"}
 
 def peso_alvo(cfg, modelo):
     """Peso bruto alvo do modelo ('LS 4 EIXOS', 'VANDERLEIA'...). None se não achar."""
-    m = norm(modelo)
-    if not m:
-        return None
-    alvos = {norm(k): v for k, v in cfg["alvos"].items()}
-    if m in alvos:
-        return alvos[m]
-    for k, v in alvos.items():
-        if k and (k in m or m in k):
-            return v
-    return None
+    return _peso_alvo(cfg["alvos"], modelo)
 
 
 def hora_excel(momento):
@@ -820,18 +748,14 @@ def lancar_completo(planilha, cfg, t):
     bruto = int(round(t["bruto"]))
     if alvo:
         dif = bruto - alvo
-        if dif > cfg["tol_exc"]:
-            faixa = "VERMELHO"
-            situacao = f"EXCESSO DE {kg(dif)} kg (acima de {kg(cfg['tol_exc'])} kg)"
-        elif dif > 0:
-            faixa = "AMARELO"
-            situacao = f"excesso de {kg(dif)} kg (até {kg(cfg['tol_exc'])} kg)"
-        elif -dif > cfg["tol_sub"]:
-            faixa = "VERDE"
-            situacao = f"SUBCARREGADO: {kg(-dif)} kg abaixo do alvo (tolerância {kg(cfg['tol_sub'])} kg)"
-        else:
-            faixa = None                     # dentro do limite: sem cor
-            situacao = "dentro do limite" + (f" ({kg(-dif)} kg abaixo do alvo)" if dif < 0 else " (no alvo)")
+        faixa = faixa_de_aceite(bruto, alvo, cfg["tol_exc"], cfg["tol_sub"])
+        situacao = {
+            VERMELHO: f"EXCESSO DE {kg(dif)} kg (acima de {kg(cfg['tol_exc'])} kg)",
+            AMARELO: f"excesso de {kg(dif)} kg (até {kg(cfg['tol_exc'])} kg)",
+            VERDE: f"SUBCARREGADO: {kg(-dif)} kg abaixo do alvo (tolerância {kg(cfg['tol_sub'])} kg)",
+            DENTRO: "dentro do limite" + (f" ({kg(-dif)} kg abaixo do alvo)" if dif < 0 else " (no alvo)"),
+        }[faixa]
+        faixa = None if faixa == DENTRO else faixa.upper()   # dentro do limite: sem cor (CORES)
         ref = f"bruto {kg(bruto)} x alvo {kg(alvo)} ({modelo})"
     else:
         faixa, situacao, ref = None, f"SEM CONFERÊNCIA: modelo '{modelo or 'em branco'}' sem peso alvo", f"bruto {kg(bruto)}"
@@ -900,28 +824,17 @@ _RE_PLACA = re.compile(r"(?<![A-Z0-9])([A-Z]{3})[ -]?(\d[A-Z0-9]\d{2})(?![A-Z0-9
 _RE_PESO = re.compile(r"(?<![\d.,])(\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+,\d{1,4})(?![\d.,])")
 
 
-def chave_dv_ok(chave):
-    """Dígito verificador da chave de acesso: módulo 11, pesos 2..9 da direita."""
-    soma, peso = 0, 2
-    for ch in reversed(chave[:43]):
-        soma += int(ch) * peso
-        peso = peso + 1 if peso < 9 else 2
-    dv = 11 - soma % 11
-    return (0 if dv >= 10 else dv) == int(chave[43])
-
-
 def ler_nota(caminho, texto=None):
     """Dados da DANFE: nº, data/hora de emissão, tickets, placas e pesos citados. None se não achar o nº."""
     txt = texto if texto is not None else texto_pdf(caminho)
-    up = unicodedata.normalize("NFKD", txt)                       # "º" vira "o", "Ç" vira "C"...
-    up = "".join(c for c in up if not unicodedata.combining(c)).upper()
+    up = sem_acento(txt).upper()                                  # "º" vira "o", "Ç" vira "C"...
     n = {"numero": None, "emissao": None, "tickets": set(), "placas": set(), "pesos": set(), "texto_up": up}
 
     # nº da nota: pela chave de acesso (44 dígitos, modelo 55); senão, pelo "Nº 000.018.999"
     for m in _RE_CHAVE.finditer(up):
         chave = re.sub(r"\D", "", m.group(1))
-        if len(chave) == 44 and chave[20:22] == "55" and chave_dv_ok(chave):
-            n["numero"], n["chave"] = int(chave[25:34]), chave
+        if modelo_da_chave(chave) == "55" and dv_confere(chave):
+            n["numero"], n["chave"] = nota_da_chave(chave), chave
             break
     if not n["numero"]:
         m = re.search(r"N[O0º°]?\.?\s*:?\s*(\d{3}\.\d{3}\.\d{3})", up)
