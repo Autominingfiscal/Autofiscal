@@ -42,7 +42,7 @@ ICONE = os.path.join(RAIZ, "painel", "autofiscal.ico")    # o mesmo da janela do
 
 # o que nao vai para o computador de quem instala
 FORA_RAIZ = {"tests", "painel", "distribuicao", ".git", ".gitignore", ".gitattributes",
-             "Autofiscal.pyw", "Claude outputs"}
+             "Autofiscal.pyw", "Claude outputs", "README.md"}
 FORA_EXT = {".bat", ".cmd"}          # chamam python.exe, que nao existe na instalacao
 
 BIBLIOTECAS = ["openpyxl", "pypdf", "PIL", "win32com"]
