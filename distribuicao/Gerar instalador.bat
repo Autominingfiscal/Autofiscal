@@ -20,7 +20,7 @@ echo  (pasta distribuicao\saida), e de dois cliques nele.
 echo.
 echo  Para gerar o instalador NESTE computador, instale antes:
 echo    1. Python 3 (https://www.python.org/downloads/ - marque "Add python.exe to PATH")
-echo    2. No Prompt: pip install pyinstaller openpyxl pypdf pillow pywin32
+echo    2. No Prompt: pip install pyinstaller openpyxl pypdf pillow pywin32 pywinauto
 echo    3. Inno Setup 6 (https://jrsoftware.org/isinfo.php)
 echo.
 pause

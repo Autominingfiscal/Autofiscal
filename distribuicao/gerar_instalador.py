@@ -5,7 +5,7 @@
     python distribuicao\\gerar_instalador.py --sem-instalador   (so a pasta com o .exe)
 
 Precisa, so no computador que GERA o instalador:
-    pip install pyinstaller openpyxl pypdf pillow pywin32
+    pip install pyinstaller openpyxl pypdf pillow pywin32 pywinauto
     Inno Setup 6  (https://jrsoftware.org/isinfo.php)
 
 Quem INSTALA nao precisa de Python nem de biblioteca nenhuma.
@@ -45,7 +45,7 @@ FORA_RAIZ = {"tests", "painel", "distribuicao", ".git", ".gitignore", ".gitattri
              "Autofiscal.pyw", "Claude outputs", "README.md"}
 FORA_EXT = {".bat", ".cmd"}          # chamam python.exe, que nao existe na instalacao
 
-BIBLIOTECAS = ["openpyxl", "pypdf", "PIL", "win32com"]
+BIBLIOTECAS = ["openpyxl", "pypdf", "PIL", "win32com", "pywinauto"]
 
 
 def versao():
@@ -156,7 +156,7 @@ def conferir_bibliotecas():
         falta.append("pyinstaller")
     if falta:
         sys.exit("Falta instalar neste computador: " + ", ".join(falta)
-                 + "\n  pip install pyinstaller openpyxl pypdf pillow pywin32")
+                 + "\n  pip install pyinstaller openpyxl pypdf pillow pywin32 pywinauto")
 
 
 def gerar_info_versao(ver):

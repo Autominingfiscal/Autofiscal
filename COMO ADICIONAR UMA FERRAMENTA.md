@@ -169,7 +169,7 @@ exemplo, o Lançador no computador da balança).
 
 ## Gerar o instalador (para computadores sem Python)
 
-1. Neste computador, uma vez só: `pip install pyinstaller openpyxl pypdf pillow pywin32`
+1. Neste computador, uma vez só: `pip install pyinstaller openpyxl pypdf pillow pywin32 pywinauto`
    e o [Inno Setup 6](https://jrsoftware.org/isinfo.php).
 2. Suba a versão em `painel/__init__.py` (`VERSAO`) e conte o que mudou no
    `CHANGELOG.md`.

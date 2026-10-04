@@ -12,6 +12,7 @@ painel_expedicao.html
 _relatorio_arquivamento.*
 Resultado conferência ISSQN*.xlsx
 conferir_issqn_config.json
+Inspecoes/
 
 # Planilhas e PDFs de trabalho nunca entram no repositório
 *.xlsx

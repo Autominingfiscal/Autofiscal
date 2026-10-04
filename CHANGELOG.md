@@ -12,6 +12,18 @@ Como numerar (`MAIOR.MENOR.CORREÇÃO`):
 
 ---
 
+## 1.2.0 — 04/10/2026
+
+### Novo
+- Ferramenta **Inspecionar janela**: mostra o que o Windows enxerga dentro da
+  janela de outro programa (campos, botões, rótulos), para saber se ele pode ser
+  automatizado pelos campos da tela. É o primeiro passo para automatizar a
+  emissão de notas no Datasul. Só lê: não clica nem digita nada. O arquivo
+  gerado não leva o conteúdo dos campos de digitação, só o tamanho.
+- *Listar janelas abertas* indica se uma janela vem de outro computador
+  (Citrix, Área de Trabalho Remota), caso em que os campos não são visíveis.
+- Biblioteca nova no instalador: pywinauto.
+
 ## 1.1.0 — 03/10/2026
 
 ### Novo

@@ -8,7 +8,7 @@ Cada ferramenta é um script Python. O painel mostra os botões de cada uma,
 o que o script está fazendo, as perguntas dele e as configurações, sem precisar
 abrir o Prompt de Comando.
 
-![Versão](https://img.shields.io/badge/vers%C3%A3o-1.1.0-2563eb)
+![Versão](https://img.shields.io/badge/vers%C3%A3o-1.2.0-2563eb)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4)
 ![Python](https://img.shields.io/badge/Python-3.14-3776ab)
 
@@ -41,6 +41,7 @@ Excel instalado. As outras ferramentas leem e gravam as planilhas sem ele.
 | **Conferência ISSQN** | Confere a planilha de retenções de ISSQN com a conferência de retenções e com a pasta das notas. |
 | **Conferência de retenções** | Compara, nota a nota, os impostos retidos do planilhão com a conferência de retenções e gera um relatório em Excel. |
 | **Arquivar documentos do dia** | Distribui os documentos soltos da pasta do dia nas pastas das notas fiscais (NF, ticket, pré-cálculo…). Tem simulação e desfazer. |
+| **Inspecionar janela** | Mostra o que o Windows enxerga dentro da janela de outro programa (ex.: Datasul), para saber se dá para automatizá-lo pelos campos da tela. Só lê, e não grava o conteúdo dos campos. |
 | **Manutenção** | Cria uma ferramenta nova a partir do modelo, exporta uma ferramenta para outro computador e roda os testes. |
 
 As ferramentas que mexem em planilhas guardam uma cópia em `Backup` antes de
@@ -55,7 +56,7 @@ gravar. Ficam as 30 cópias mais recentes de cada planilha.
 Precisa de Python 3 e das bibliotecas:
 
 ```
-pip install openpyxl pypdf pillow pywin32
+pip install openpyxl pypdf pillow pywin32 pywinauto
 ```
 
 Depois, dois cliques em **`Abrir Autofiscal.bat`** (ou em `Autofiscal.pyw`).
@@ -95,7 +96,7 @@ que tem na pasta `comum` estão em
 
 Só o computador que **gera** o instalador precisa disto:
 
-1. Python 3 e `pip install pyinstaller openpyxl pypdf pillow pywin32`
+1. Python 3 e `pip install pyinstaller openpyxl pypdf pillow pywin32 pywinauto`
 2. [Inno Setup 6](https://jrsoftware.org/isinfo.php)
 
 Depois:
