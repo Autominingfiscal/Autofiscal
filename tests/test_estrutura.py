@@ -132,6 +132,15 @@ class TestExportar(unittest.TestCase):
         self.assertIn("config.ini", res2["config_mantida"])
         self.assertTrue(os.path.isfile(os.path.join(res2["pasta"], "automining", "pdf.py")))
 
+    def test_nao_exporta_para_dentro_do_autofiscal(self):
+        # escolher a propria ferramenta (ou outra pasta do Autofiscal) como destino
+        # criava uma copia da ferramenta, com outra pasta comum, dentro do projeto
+        ferramenta = os.path.join(_apoio.RAIZ, "Arquivador")
+        for destino in (ferramenta, os.path.join(_apoio.RAIZ, "Autoiss"), _apoio.RAIZ):
+            with self.assertRaises(ValueError, msg=destino):
+                manutencao.exportar(ferramenta, destino)
+        self.assertFalse(os.path.exists(os.path.join(ferramenta, "Arquivador")))
+
     def test_nao_exporta_dados_nem_pasta_que_nao_e_ferramenta(self):
         destino = _apoio.pasta_temporaria(self)
         with self.assertRaises(ValueError):

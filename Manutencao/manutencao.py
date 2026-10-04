@@ -108,8 +108,12 @@ def exportar(pasta_ferramenta, destino, relato=print):
     if os.path.normcase(origem) in (os.path.normcase(COMUM), os.path.normcase(RAIZ)):
         raise ValueError("Escolha a pasta de UMA ferramenta.")
     alvo = os.path.join(os.path.abspath(destino), os.path.basename(origem))
-    if os.path.normcase(alvo) == os.path.normcase(origem):
+    if _dentro(alvo, origem):
         raise ValueError("O destino e a propria ferramenta. Escolha outra pasta.")
+    if _dentro(alvo, RAIZ):
+        # a copia viraria uma ferramenta repetida (com outra comum) dentro do Autofiscal
+        raise ValueError("O destino fica dentro da pasta do Autofiscal. Escolha uma pasta "
+                         "fora dela (pendrive, rede ou a pasta do outro PC).")
 
     res = {"pasta": alvo, "codigo": 0, "config_nova": 0, "config_mantida": []}
     _copiar_arvore(origem, alvo, res)
@@ -123,6 +127,16 @@ def exportar(pasta_ferramenta, destino, relato=print):
         for nome in res["config_mantida"]:
             relato(f"    {nome}")
     return res
+
+
+def _dentro(caminho, pasta):
+    """True se `caminho` e a propria `pasta` ou fica em algum lugar dentro dela."""
+    caminho = os.path.normcase(os.path.abspath(caminho))
+    pasta = os.path.normcase(os.path.abspath(pasta))
+    try:
+        return os.path.commonpath([caminho, pasta]) == pasta
+    except ValueError:                      # unidades diferentes (C: e D:)
+        return False
 
 
 def _copiar_arvore(origem, alvo, res, so_codigo=False):
