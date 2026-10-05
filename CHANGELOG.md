@@ -12,6 +12,19 @@ Como numerar (`MAIOR.MENOR.CORREÇÃO`):
 
 ---
 
+## 1.5.0 — 05/10/2026
+
+### Novo
+- **Lançador da expedição → Lacres do turno** (vespertino ou matutino): com a
+  EXPED_CONCENTRADO aberta, pede o par de lacres de cada motorista da tabela do
+  turno que ainda não tem, confere (dois números, nenhum já usado em outra
+  linha ou outro dia) e grava "9999 - 1265" na coluna CÓDIGO LACRE. Daí o
+  Lançador leva o lacre para a expedição e para as OBSERVAÇÕES ADICIONAIS.
+- Gera as **etiquetas** dos lacres, 15 por folha A4 com linha de corte (nome,
+  cavalo, reboque, modelo, transportadora, lacres, turno e data), e abre no
+  navegador para imprimir. Rodar de novo com todos preenchidos só reimprime.
+- Motorista que já passou pela balança ganha o lacre também na linha da expedição.
+
 ## 1.4.1 — 05/10/2026
 
 ### Mudou

@@ -35,6 +35,18 @@
       "descricao": "Fica olhando as pastas e lançando sozinho. Deixe a planilha aberta no Excel. Para desligar, clique em Parar."
     },
     {
+      "rotulo": "Lacres do turno vespertino",
+      "script": "lacres.py",
+      "args": ["--turno", "vespertino"],
+      "descricao": "Pede o par de lacres de cada motorista do turno vespertino (aba de hoje) que ainda não tem, grava na tabela do turno e abre as etiquetas para imprimir (15 por folha). Deixe a planilha aberta no Excel."
+    },
+    {
+      "rotulo": "Lacres do turno matutino",
+      "script": "lacres.py",
+      "args": ["--turno", "matutino"],
+      "descricao": "O mesmo, para o turno matutino."
+    },
+    {
       "rotulo": "Testar numa planilha",
       "script": "etapa3_lancador.py",
       "args": [
