@@ -168,5 +168,87 @@ class TestEtapasNaPlanilha(unittest.TestCase):
         self.assertEqual(r[0], "ESPERANDO")
 
 
+class TestObservacoesAdicionais(unittest.TestCase):
+    """Coluna X: 'TICKET N°: / PLACA CAVALO: / PLACA REBOQUE: / LACRES N°:' da propria linha."""
+
+    CAB = EXPED + ["OBSERVAÇÕES\nADICIONAIS"]      # com a quebra de linha, como na planilha real
+
+    def setUp(self):
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "18.09"
+        for c, cab in enumerate(self.CAB, start=1):
+            ws.cell(1, c).value = cab
+        ws.add_table(Table(displayName="Expedicao", ref="A1:Q5"))
+        for c, cab in enumerate(TURNO, start=1):
+            ws.cell(10, c).value = cab
+        ws.add_table(Table(displayName="Matutino", ref="A10:I11"))
+        for c, v in enumerate(["000123", "RODOGRANEL", "JOAO DA SILVA", "ABC1D23", "MG",
+                               "XYZ9876", "MG", "LS 4 EIXOS"], start=1):
+            ws.cell(11, c).value = v
+        caminho = os.path.join(_apoio.pasta_temporaria(self), "EXPED.xlsx")
+        wb.save(caminho)
+        self.planilha = lan.PlanilhaTeste(caminho)
+        self.ws = self.planilha.wb["18.09"]
+
+    def col(self, nome):
+        return self.CAB.index(nome) + 1
+
+    def obs(self, linha):
+        return self.ws.cell(linha, len(self.CAB)).value
+
+    def sincronizar(self):
+        self.planilha.limpar_cache()
+        with contextlib.redirect_stdout(io.StringIO()):
+            return lan.sincronizar_observacoes(self.planilha, "18.09")
+
+    def test_texto(self):
+        self.assertEqual(lan.texto_observacoes(19569.0, "ABC1D23", "xyz-9876", 123456.0),
+                         "TICKET N°: 19569 / PLACA CAVALO: ABC-1D23 / PLACA REBOQUE: XYZ-9876 "
+                         "/ LACRES N°: 123456")
+        self.assertEqual(lan.texto_observacoes(19569, "ABC-1D23", None, "  "),
+                         "TICKET N°: 19569 / PLACA CAVALO: ABC-1D23 / PLACA REBOQUE: / LACRES N°:")
+
+    def test_tara_preenche_com_o_lacre_do_turno(self):
+        t = {"numero": 19569, "cavalo": "ABC1D23", "reboque": "", "motorista": "JOAO DA SILVA",
+             "transportadora": "RODOGRANEL", "entrada": dt.datetime(2026, 9, 18, 7, 4),
+             "saida": None, "peso_entrada": 17250.0, "tara": 0.0, "bruto": 0.0, "tipo": "tara"}
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(lan.lancar_tara(self.planilha, CFG, t)[0], "LANÇADO")
+        self.assertEqual(self.sincronizar(), 1)
+        self.assertEqual(self.obs(2), "TICKET N°: 19569 / PLACA CAVALO: ABC-1D23 / "
+                                      "PLACA REBOQUE: XYZ-9876 / LACRES N°: 000123")
+        self.assertEqual(self.sincronizar(), 0)                  # nada mudou: nao regrava
+
+    def test_lacre_digitado_depois_atualiza(self):
+        self.ws.cell(2, self.col("TICKET DE PESAGEM")).value = 19569
+        self.ws.cell(2, self.col("PLACA DO CAVALO")).value = "ABC-1D23"
+        self.assertEqual(self.sincronizar(), 1)
+        self.assertTrue(self.obs(2).endswith("LACRES N°:"))
+        self.ws.cell(2, self.col("CÓDIGO LACRE")).value = "554433 / 554434"
+        self.assertEqual(self.sincronizar(), 1)
+        self.assertTrue(self.obs(2).endswith("LACRES N°: 554433 / 554434"))
+
+    def test_nao_mexe_em_texto_escrito_a_mao_nem_em_linha_sem_ticket(self):
+        self.ws.cell(2, self.col("TICKET DE PESAGEM")).value = 19569
+        self.ws.cell(2, len(self.CAB)).value = "Carga liberada pelo supervisor"
+        self.ws.cell(3, self.col("PLACA DO CAVALO")).value = "ABC-1D23"   # sem ticket
+        self.assertEqual(self.sincronizar(), 0)
+        self.assertEqual(self.obs(2), "Carga liberada pelo supervisor")
+        self.assertIsNone(self.obs(3))
+
+    def test_planilha_sem_a_coluna_nao_faz_nada(self):
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "18.09"
+        for c, cab in enumerate(EXPED, start=1):
+            ws.cell(1, c).value = cab
+        ws.add_table(Table(displayName="Expedicao", ref="A1:P2"))
+        ws.cell(2, EXPED.index("TICKET DE PESAGEM") + 1).value = 19569
+        caminho = os.path.join(_apoio.pasta_temporaria(self), "SEM_X.xlsx")
+        wb.save(caminho)
+        self.assertEqual(lan.sincronizar_observacoes(lan.PlanilhaTeste(caminho), "18.09"), 0)
+
+
 if __name__ == "__main__":
     unittest.main()

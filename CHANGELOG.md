@@ -12,6 +12,15 @@ Como numerar (`MAIOR.MENOR.CORREÇÃO`):
 
 ---
 
+## 1.3.0 — 05/10/2026
+
+### Novo
+- **Lançador da expedição** preenche a coluna **OBSERVAÇÕES ADICIONAIS** (X)
+  de cada caminhão: `TICKET N°: … / PLACA CAVALO: … / PLACA REBOQUE: … / LACRES N°: …`,
+  com os dados da própria linha. Se o lacre ou uma placa for digitado ou
+  corrigido depois, o texto se atualiza sozinho no ciclo seguinte (abas de hoje
+  e de ontem). Texto escrito à mão que não comece com "TICKET N°:" não é trocado.
+
 ## 1.2.0 — 04/10/2026
 
 ### Novo

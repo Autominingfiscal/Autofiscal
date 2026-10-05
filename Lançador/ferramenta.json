@@ -1,7 +1,7 @@
 {
   "nome": "Lançador da expedição",
   "ordem": 20,
-  "descricao": "Acompanha as pastas da balança e lança na planilha EXPED_CONCENTRADO aberta no Excel: tara, peso de saída com a cor da faixa de aceite, e número e hora da nota fiscal.",
+  "descricao": "Acompanha as pastas da balança e lança na planilha EXPED_CONCENTRADO aberta no Excel: tara, peso de saída com a cor da faixa de aceite, número e hora da nota fiscal, e a coluna OBSERVAÇÕES ADICIONAIS (ticket, placas e lacres).",
   "config": "etapa3_config.ini",
   "requer": [
     {

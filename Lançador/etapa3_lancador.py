@@ -30,6 +30,13 @@ ETAPA 3 - NOTA FISCAL (DANFE em PDF)
   Nº da nota: tirado da chave de acesso (44 dígitos).
   Hora (coluna V): SOMENTE do campo "PROTOCOLO DE AUTORIZAÇÃO DE USO". Sem protocolo, a hora fica em branco.
 
+OBSERVAÇÕES ADICIONAIS (coluna X)
+  A cada ciclo, nas abas de hoje e de ontem, monta com os dados da própria linha:
+    TICKET N°: 19569 / PLACA CAVALO: ABC-1D23 / PLACA REBOQUE: XYZ-9876 / LACRES N°: 123456
+  Lacre ou placa digitados/corrigidos depois atualizam o texto sozinhos.
+  Só mexe na célula vazia ou que comece com "TICKET N°:" (texto escrito à mão
+  com outro começo fica como está).
+
 Regras gerais:
   - Aba: a do dia da ENTRADA do ticket (ex.: 25/09 -> aba "25.09"). Nenhuma aba é criada.
   - Turno: 1ª tabela abaixo da expedição = MATUTINO, 2ª = VESPERTINO (entrada antes de 12:00 = matutino).
@@ -1041,6 +1048,63 @@ def ver_nota(caminho, mostrar_texto=False):
 
 
 # =============================================================================
+# Observações adicionais (coluna X)
+# =============================================================================
+OBSERVACOES = "OBSERVAÇÕES ADICIONAIS"
+
+
+def _texto_celula(v):
+    """Valor da célula como texto: 19569.0 (número vindo do Excel) vira '19569'."""
+    if vazio(v):
+        return ""
+    if isinstance(v, float) and v.is_integer():
+        return str(int(v))
+    return str(v).strip()
+
+
+def texto_observacoes(ticket, cavalo, reboque, lacre):
+    """'TICKET N°: 19569 / PLACA CAVALO: ABC-1D23 / PLACA REBOQUE: XYZ-9876 / LACRES N°: 123456'.
+    Campo em branco fica só com o rótulo."""
+    partes = [("TICKET N°", _texto_celula(ticket)),
+              ("PLACA CAVALO", formatar_placa(_texto_celula(cavalo))),
+              ("PLACA REBOQUE", formatar_placa(_texto_celula(reboque))),
+              ("LACRES N°", _texto_celula(lacre))]
+    return " / ".join(f"{rotulo}: {valor}".rstrip() for rotulo, valor in partes)
+
+
+def observacao_e_do_lancador(v):
+    """A coluna X é do Lançador enquanto estiver vazia ou começar com 'TICKET N°:'.
+    Texto escrito à mão com outro começo nunca é trocado."""
+    return vazio(v) or norm(v).startswith("TICKETN")
+
+
+def sincronizar_observacoes(planilha, aba):
+    """Mantém a coluna X igual aos dados da própria linha (ticket, placas e lacre).
+    Só grava o que mudou: lacre digitado depois atualiza a coluna sozinho.
+    Devolve quantas linhas foram atualizadas."""
+    exped = tabela_expedicao(planilha.tabelas(aba))
+    if exped is None or exped.col(OBSERVACOES) is None:
+        return 0
+    cols = {c: exped.col(c) for c in ("TICKET DE PESAGEM", "PLACA DO CAVALO", "PLACA DO REBOQUE",
+                                      "CÓDIGO LACRE", OBSERVACOES)}
+    pega = lambda lin, c: lin[cols[c]] if cols[c] is not None else None
+    mudancas = []
+    for i, lin in enumerate(exped.linhas):
+        if vazio(pega(lin, "TICKET DE PESAGEM")):
+            continue
+        atual = pega(lin, OBSERVACOES)
+        if not observacao_e_do_lancador(atual):
+            continue
+        novo = texto_observacoes(pega(lin, "TICKET DE PESAGEM"), pega(lin, "PLACA DO CAVALO"),
+                                 pega(lin, "PLACA DO REBOQUE"), pega(lin, "CÓDIGO LACRE"))
+        if _texto_celula(atual) != novo:
+            mudancas.append((exped.linha_excel(i), novo))
+    for linha, novo in mudancas:      # depois do laço: escrever limpa as linhas lidas da tabela
+        planilha.escrever(aba, linha, exped.col_ini + cols[OBSERVACOES], [novo])
+    return len(mudancas)
+
+
+# =============================================================================
 # Ciclo
 # =============================================================================
 _lidos = {}        # caminho|versão -> ticket (cada PDF é lido uma vez só)
@@ -1112,11 +1176,16 @@ def ciclo(planilha, cfg):
     fila.sort(key=lambda x: (x[0], x[1], x[2].name))   # na ordem em que as pesagens aconteceram
 
     por_resultado = {}
+    hoje = dt.date.today()
+    abas_obs = {nome_aba(hoje), nome_aba(hoje - dt.timedelta(days=1))}
+    if isinstance(planilha, PlanilhaTeste):      # --teste: mostra a coluna X de todos os dias
+        abas_obs |= {a for a in planilha.abas() if re.fullmatch(r"\d{2}\.\d{2}", a)}
     for _, _, e, chave, t in fila:
         if t["tipo"] == "tara":
             resultado, aba, linha, obs = lancar_tara(planilha, cfg, t)
         else:
             resultado, aba, linha, obs = lancar_completo(planilha, cfg, t)
+        abas_obs.add(aba)
         etiqueta = "TARA" if t["tipo"] == "tara" else "COMPLETO"
         por_resultado[resultado] = por_resultado.get(resultado, 0) + 1
         if resultado in ("LANÇADO", "COMPLETADO", "SAÍDA", "SAÍDA - ALERTA"):
@@ -1141,6 +1210,10 @@ def ciclo(planilha, cfg):
         mostrar(" | ".join(f"Pasta {r}: {n} PDF(s)" for r, n in sorted(contagem.items()))
                 + f" | {resumo[1]} esperando | {resumo[2]} de dias sem aba nesta planilha")
     ciclo_notas(planilha, cfg)
+    for aba in sorted(a for a in abas_obs if a in planilha.abas()):
+        n = sincronizar_observacoes(planilha, aba)
+        if n:
+            mostrar(f"OBS.     coluna OBSERVAÇÕES ADICIONAIS atualizada em {n} linha(s) da aba {aba}")
     # salva pelo que ficou PENDENTE, nao pelo que este ciclo gravou: se um ciclo
     # anterior caiu com erro depois de escrever, o que ele escreveu salva agora
     if cfg["salvar"] and getattr(planilha, "pendente", False):
