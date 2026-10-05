@@ -1,14 +1,8 @@
 {
   "nome": "E-mails do faturamento",
   "ordem": 65,
-  "descricao": "Monta no Outlook os dois e-mails do dia: um com os XML do faturamento e outro com as NF, os tickets e o relatório de pesagem. Quem recebe fica em Configurações. Precisa do Outlook clássico.",
+  "descricao": "Prepara no Outlook os dois e-mails do dia: um com os XML do faturamento e outro com as NF, os tickets e o relatório de pesagem. Abre cada e-mail já preenchido e uma pasta só com os anexos dele: é só arrastar os arquivos e enviar. Quem recebe fica em Configurações.",
   "config": "email_config.ini",
-  "requer": [
-    {
-      "modulo": "win32com",
-      "pacote": "pywin32"
-    }
-  ],
   "campos": {
     "para": {
       "tipo": "texto",
@@ -21,15 +15,15 @@
   },
   "acoes": [
     {
-      "rotulo": "Abrir e-mails para conferir",
+      "rotulo": "Preparar e-mails",
       "script": "enviar_emails.py",
       "principal": true,
       "args": [
         "{pasta:Escolha a pasta do dia (com os XML, as NF, os tickets e o relatório)}",
         "--modo",
-        "abrir"
+        "preparar"
       ],
-      "descricao": "Monta os dois e-mails com os anexos e a sua assinatura e deixa abertos no Outlook. Confira e clique em Enviar."
+      "descricao": "Um e-mail por vez: abre o e-mail novo com destinatários, assunto e texto, e uma pasta só com os anexos dele. Arraste os arquivos (Ctrl+A) para o e-mail, envie e responda aqui para preparar o próximo."
     },
     {
       "rotulo": "Conferir anexos",
@@ -39,18 +33,7 @@
         "--modo",
         "simular"
       ],
-      "descricao": "Só lista o que iria em cada e-mail. Não abre o Outlook."
-    },
-    {
-      "rotulo": "Enviar direto",
-      "script": "enviar_emails.py",
-      "args": [
-        "{pasta:Escolha a pasta do dia (com os XML, as NF, os tickets e o relatório)}",
-        "--modo",
-        "enviar"
-      ],
-      "confirmar": "Os dois e-mails vão ser ENVIADOS sem abrir para conferência. Continuar?",
-      "descricao": "Envia sem abrir. Um e-mail com problema (sem anexo, sem destinatário, grande demais) não é enviado."
+      "descricao": "Só lista o que iria em cada e-mail. Não abre nada."
     }
   ]
 }

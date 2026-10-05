@@ -127,10 +127,53 @@ class TestMontarEmail(unittest.TestCase):
     def test_simular_nao_abre_o_outlook(self):
         pasta = _apoio.pasta_temporaria(self)
         with mock.patch.object(em, "abrir_outlook") as abrir, \
+                mock.patch.object(em, "abrir_no_windows") as janelas, \
                 mock.patch.object(em, "ler_config", return_value=CFG), \
                 contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(em.main([pasta, "--modo", "simular"]), 0)
         abrir.assert_not_called()
+        janelas.assert_not_called()
+
+
+class TestNovoOutlook(unittest.TestCase):
+    """--modo preparar: e-mail novo pelo mailto: + pasta so com os anexos dele."""
+
+    def test_link_mailto(self):
+        from urllib.parse import parse_qs, unquote, urlsplit
+        link = em.link_mailto({"para": "a@x.com; b@x.com", "cc": "c@x.com"},
+                              "FATURAMENTO / RELATÓRIO DE PESAGENS - 05/10/2026",
+                              "Boa tarde, prezados.\n\nNF's & ticket's")
+        partes = urlsplit(link)
+        self.assertEqual(partes.scheme, "mailto")
+        self.assertEqual(unquote(partes.path), "a@x.com,b@x.com")
+        q = parse_qs(partes.query)
+        self.assertEqual(q["cc"], ["c@x.com"])
+        self.assertEqual(q["subject"], ["FATURAMENTO / RELATÓRIO DE PESAGENS - 05/10/2026"])
+        self.assertEqual(q["body"], ["Boa tarde, prezados.\r\n\r\nNF's & ticket's"])
+        self.assertNotIn(" ", link)
+
+    def test_preparar_um_por_vez_com_a_pasta_de_anexos(self):
+        pasta = _apoio.pasta_temporaria(self)
+        base = _apoio.pasta_temporaria(self)
+        criar(pasta, "1.xml", "NF 1 R. PORTO/NF 1 R. PORTO 9.pdf", "NF 1 R. PORTO/TICKET 9.pdf",
+              "RELATORIO.pdf")
+        abertos, perguntas = [], []
+        separar = em.separar_anexos
+        with mock.patch.object(em, "abrir_no_windows", side_effect=abertos.append), \
+                mock.patch.object(em, "separar_anexos", side_effect=lambda e, d: separar(e, d, base)), \
+                mock.patch("builtins.input", side_effect=lambda txt: perguntas.append(txt) or ""), \
+                mock.patch.object(em, "ler_config", return_value=CFG), \
+                mock.patch.object(em, "abrir_outlook") as classico, \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(em.main([pasta, "--modo", "preparar"]), 0)
+        classico.assert_not_called()                     # nunca toca no Outlook classico
+        self.assertEqual(len(perguntas), 1)              # espera so entre o 1o e o 2o
+        pastas = [a for a in abertos if not a.startswith("mailto:")]
+        links = [a for a in abertos if a.startswith("mailto:")]
+        self.assertEqual((len(pastas), len(links)), (2, 2))
+        self.assertEqual(sorted(os.listdir(pastas[0])), ["1.xml"])
+        self.assertEqual(sorted(os.listdir(pastas[1])),
+                         ["NF 1 R. PORTO 9.pdf", "RELATORIO.pdf", "TICKET 9.pdf"])
 
 
 if __name__ == "__main__":

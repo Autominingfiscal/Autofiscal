@@ -4,13 +4,18 @@
     1. "FATURAMENTO / RELATORIO DE PESAGENS - <data>" com todos os XML da pasta
     2. o mesmo titulo com as NF, os TICKET e o RELATORIO.pdf da pasta
 
-    python enviar_emails.py "<pasta do dia>" --modo simular   so lista os anexos
-    python enviar_emails.py "<pasta do dia>" --modo abrir     abre os e-mails para conferir
-    python enviar_emails.py "<pasta do dia>" --modo enviar    envia direto
+    python enviar_emails.py "<pasta do dia>" --modo simular    so lista os anexos
+    python enviar_emails.py "<pasta do dia>" --modo preparar   NOVO OUTLOOK (padrao do painel)
+    python enviar_emails.py "<pasta do dia>" --modo abrir      Outlook CLASSICO: abre para conferir
+    python enviar_emails.py "<pasta do dia>" --modo enviar     Outlook CLASSICO: envia direto
+
+--modo preparar: o "novo Outlook" nao aceita automacao. Para cada e-mail,
+abre um e-mail novo ja com destinatarios, assunto e texto (link mailto:) e
+uma pasta so com os anexos dele: e so arrastar os arquivos e enviar. Os
+anexos nao vao pelo link: nenhum programa de e-mail aceita isso.
 
 A pasta e lida com as subpastas (ex.: as "NF ... R. PORTO" do Arquivador).
 Quem recebe fica no email_config.ini, nesta pasta.
-Precisa do Outlook CLASSICO (o "novo Outlook" nao aceita automacao).
 
 Codigos de saida: 0 tudo certo | 1 erro | 2 algum e-mail ficou sem enviar
 """
@@ -37,7 +42,9 @@ import html
 import re
 import shutil
 import tempfile
+import time
 from datetime import datetime
+from urllib.parse import quote
 
 from comum.arquivos import ler_ini
 from comum.caminhos import caminho_do_usuario
@@ -179,6 +186,74 @@ def montar_email(outlook, dest, assunto, texto, anexos, temporaria):
     return m
 
 
+# ----------------------------------------------------------- novo outlook ----
+PASTA_ANEXOS = os.path.join(tempfile.gettempdir(), "Autofiscal - anexos dos e-mails")
+DIAS_GUARDADOS = 7
+
+
+def link_mailto(dest, assunto, texto):
+    """mailto: com para, cc, assunto e corpo. Abre um e-mail novo no programa de
+    e-mail padrao do Windows (no PC da empresa, o novo Outlook)."""
+    para = ",".join(e.strip() for e in dest["para"].split(";") if e.strip())
+    campos = []
+    cc = ",".join(e.strip() for e in dest["cc"].split(";") if e.strip())
+    if cc:
+        campos.append("cc=" + quote(cc, safe="@,"))
+    campos.append("subject=" + quote(assunto, safe=""))
+    campos.append("body=" + quote(texto.replace("\n", "\r\n"), safe=""))
+    return "mailto:" + quote(para, safe="@,") + "?" + "&".join(campos)
+
+
+def _limpar_anexos_velhos(base):
+    limite = time.time() - DIAS_GUARDADOS * 86400
+    try:
+        for nome in os.listdir(base):
+            caminho = os.path.join(base, nome)
+            if os.path.isdir(caminho) and os.path.getmtime(caminho) < limite:
+                shutil.rmtree(caminho, ignore_errors=True)
+    except OSError:
+        pass
+
+
+def separar_anexos(email, data, base=PASTA_ANEXOS):
+    """Copia os anexos de um e-mail para uma pasta so deles e devolve a pasta.
+    Assim e so selecionar tudo (Ctrl+A) e arrastar para o e-mail."""
+    os.makedirs(base, exist_ok=True)
+    _limpar_anexos_velhos(base)
+    nome = f"{data.replace('/', '-')} - {email['nome']}"
+    pasta = os.path.join(base, re.sub(r'[\\/:*?"<>|]', "", nome))
+    shutil.rmtree(pasta, ignore_errors=True)              # rodou de novo: so os anexos de agora
+    os.makedirs(pasta)
+    for caminho in email["anexos"]:
+        origem = "\\\\?\\" + os.path.abspath(caminho) if os.name == "nt" else caminho
+        shutil.copy2(origem, os.path.join(pasta, os.path.basename(caminho)))
+    return pasta
+
+
+def abrir_no_windows(alvo):
+    os.startfile(alvo)                                    # pasta no Explorer / mailto no e-mail
+
+
+def preparar(emails, data):
+    """Um e-mail por vez: abre a pasta dos anexos e o e-mail novo, e espera."""
+    prontos = [e for e in emails if e["anexos"]]
+    for n, e in enumerate(prontos, start=1):
+        pasta = separar_anexos(e, data)
+        print(f"\n>>> {e['nome']}: {len(e['anexos'])} anexo(s)")
+        abrir_no_windows(pasta)
+        abrir_no_windows(link_mailto(e["dest"], e["assunto"], e["texto"]))
+        print("    1. Um e-mail novo abriu com destinatarios, assunto e texto.")
+        print(f"    2. Na pasta que abriu ({os.path.basename(pasta)}), selecione tudo (Ctrl+A)")
+        print("       e arraste os arquivos para dentro do e-mail.")
+        print("    3. Confira e clique em Enviar.")
+        if n < len(prontos):
+            try:
+                input("    Depois de enviar, responda qualquer coisa aqui para preparar o proximo: ")
+            except EOFError:
+                pass
+    return prontos
+
+
 # ------------------------------------------------------------------ plano ----
 def planejar(pasta, cfg, data):
     achados = coletar(pasta)
@@ -237,7 +312,7 @@ def mostrar_plano(emails, pasta):
 def main(argv=None):
     ap = argparse.ArgumentParser(description="E-mails do faturamento no Outlook")
     ap.add_argument("pasta", help="pasta com os XML, as NF, os tickets e o relatorio")
-    ap.add_argument("--modo", choices=("simular", "abrir", "enviar"), default="simular")
+    ap.add_argument("--modo", choices=("simular", "preparar", "abrir", "enviar"), default="simular")
     ap.add_argument("--data", help="data no texto (dd/mm/aaaa). Padrao: hoje")
     args = ap.parse_args(argv)
 
@@ -259,6 +334,16 @@ def main(argv=None):
     if args.modo == "simular":
         print("\nSimulacao: nenhum e-mail foi criado.")
         return 0
+    if args.modo == "preparar":
+        prontos = preparar(emails, data)
+        if not prontos:
+            print("\nERRO: nenhum e-mail tem anexo. Veja os erros acima.")
+            return 1
+        sem = [e for e in emails if e not in prontos]
+        for e in sem:
+            print(f"ATENÇÃO: {e['nome']} NAO foi preparado (sem anexos).")
+        print("\nPronto. Os e-mails so saem quando voce clica em Enviar no Outlook.")
+        return 2 if sem else 0
 
     # abrir: monta o que tiver anexo, mesmo com problema (quem confere decide);
     # enviar: so o e-mail sem nenhum problema

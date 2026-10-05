@@ -12,6 +12,19 @@ Como numerar (`MAIOR.MENOR.CORREÇÃO`):
 
 ---
 
+## 1.4.1 — 05/10/2026
+
+### Mudou
+- **E-mails do faturamento** passa a funcionar com o **novo Outlook**, que não
+  aceita automação. Botão *Preparar e-mails*: para cada e-mail, abre um e-mail
+  novo já com destinatários, assunto e texto, e uma pasta só com os anexos
+  dele. É só arrastar os arquivos (Ctrl+A), enviar e responder no painel para
+  preparar o próximo. Os anexos não vão sozinhos: nenhum programa de e-mail
+  aceita anexo por link.
+- Saíram do painel os botões do Outlook clássico, que no PC da empresa podiam
+  abrir o Outlook 2016 (que não funciona lá). Continuam na linha de comando
+  (`--modo abrir` e `--modo enviar`).
+
 ## 1.4.0 — 05/10/2026
 
 ### Novo
