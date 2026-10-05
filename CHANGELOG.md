@@ -12,6 +12,20 @@ Como numerar (`MAIOR.MENOR.CORREÇÃO`):
 
 ---
 
+## 1.4.0 — 05/10/2026
+
+### Novo
+- Ferramenta **E-mails do faturamento**: monta no Outlook os dois e-mails do
+  dia, "FATURAMENTO / RELATÓRIO DE PESAGENS - <data>". O primeiro leva todos os
+  XML da pasta do dia; o segundo, as NF, os tickets de pesagem e o relatório.
+  Lê também as subpastas que o Arquivador cria e deixa de fora o `Backup`, os
+  tickets assinados e os pré-cálculos. Mantém a assinatura do Outlook.
+- Três botões: *Conferir anexos* (só lista), *Abrir e-mails para conferir*
+  (você revisa e clica em Enviar) e *Enviar direto* (pede confirmação e não
+  envia e-mail sem destinatário, sem anexo ou grande demais).
+- Destinatários de cada e-mail em Configurações (`email_config.ini`).
+- Precisa do Outlook clássico: o "novo Outlook" não aceita automação.
+
 ## 1.3.0 — 05/10/2026
 
 ### Novo

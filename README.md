@@ -8,7 +8,7 @@ Cada ferramenta é um script Python. O painel mostra os botões de cada uma,
 o que o script está fazendo, as perguntas dele e as configurações, sem precisar
 abrir o Prompt de Comando.
 
-![Versão](https://img.shields.io/badge/vers%C3%A3o-1.3.0-2563eb)
+![Versão](https://img.shields.io/badge/vers%C3%A3o-1.4.0-2563eb)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4)
 ![Python](https://img.shields.io/badge/Python-3.14-3776ab)
 
@@ -41,6 +41,7 @@ Excel instalado. As outras ferramentas leem e gravam as planilhas sem ele.
 | **Conferência ISSQN** | Confere a planilha de retenções de ISSQN com a conferência de retenções e com a pasta das notas. |
 | **Conferência de retenções** | Compara, nota a nota, os impostos retidos do planilhão com a conferência de retenções e gera um relatório em Excel. |
 | **Arquivar documentos do dia** | Distribui os documentos soltos da pasta do dia nas pastas das notas fiscais (NF, ticket, pré-cálculo…). Tem simulação e desfazer. |
+| **E-mails do faturamento** | Monta no Outlook os dois e-mails do dia: um com os XML do faturamento e outro com as NF, os tickets e o relatório de pesagem. Abre para conferir ou envia direto. |
 | **Inspecionar janela** | Mostra o que o Windows enxerga dentro da janela de outro programa (ex.: Datasul), para saber se dá para automatizá-lo pelos campos da tela. Só lê, e não grava o conteúdo dos campos. |
 | **Manutenção** | Cria uma ferramenta nova a partir do modelo, exporta uma ferramenta para outro computador e roda os testes. |
 

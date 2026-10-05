@@ -1,0 +1,56 @@
+{
+  "nome": "E-mails do faturamento",
+  "ordem": 65,
+  "descricao": "Monta no Outlook os dois e-mails do dia: um com os XML do faturamento e outro com as NF, os tickets e o relatório de pesagem. Quem recebe fica em Configurações. Precisa do Outlook clássico.",
+  "config": "email_config.ini",
+  "requer": [
+    {
+      "modulo": "win32com",
+      "pacote": "pywin32"
+    }
+  ],
+  "campos": {
+    "para": {
+      "tipo": "texto",
+      "ajuda": "Endereços de e-mail separados por ponto e vírgula (;)."
+    },
+    "cc": {
+      "tipo": "texto",
+      "ajuda": "Cópia. Endereços separados por ponto e vírgula (;)."
+    }
+  },
+  "acoes": [
+    {
+      "rotulo": "Abrir e-mails para conferir",
+      "script": "enviar_emails.py",
+      "principal": true,
+      "args": [
+        "{pasta:Escolha a pasta do dia (com os XML, as NF, os tickets e o relatório)}",
+        "--modo",
+        "abrir"
+      ],
+      "descricao": "Monta os dois e-mails com os anexos e a sua assinatura e deixa abertos no Outlook. Confira e clique em Enviar."
+    },
+    {
+      "rotulo": "Conferir anexos",
+      "script": "enviar_emails.py",
+      "args": [
+        "{pasta:Escolha a pasta do dia (com os XML, as NF, os tickets e o relatório)}",
+        "--modo",
+        "simular"
+      ],
+      "descricao": "Só lista o que iria em cada e-mail. Não abre o Outlook."
+    },
+    {
+      "rotulo": "Enviar direto",
+      "script": "enviar_emails.py",
+      "args": [
+        "{pasta:Escolha a pasta do dia (com os XML, as NF, os tickets e o relatório)}",
+        "--modo",
+        "enviar"
+      ],
+      "confirmar": "Os dois e-mails vão ser ENVIADOS sem abrir para conferência. Continuar?",
+      "descricao": "Envia sem abrir. Um e-mail com problema (sem anexo, sem destinatário, grande demais) não é enviado."
+    }
+  ]
+}
