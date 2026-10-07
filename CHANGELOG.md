@@ -12,6 +12,22 @@ Como numerar (`MAIOR.MENOR.CORREÇÃO`):
 
 ---
 
+## 1.6.0 — 07/10/2026
+
+### Novo
+- Ferramenta **Dashboard Fluig**: lê a exportação "Resultado da consulta de
+  solicitações" mais recente (pasta Downloads, ajustável) e abre no navegador
+  um dashboard com filtros por ano, mês, técnico fiscal e tipo:
+  total do ano, abertas no mês, em aberto agora, finalizadas, reprovadas,
+  valor total das notas, SLA das tratativas (só finalizadas), ranking dos
+  técnicos, ranking de fornecedores (quantidade ou valor), quantidade por tipo
+  (serviço, produtos gerais, energia ONS, CTE Rodogranel) e abertas ×
+  finalizadas por mês. Cada gráfico tem a opção "Ver tabela"; tema claro e escuro.
+- Funciona sem internet e os dados não saem do computador. As regras (o que é
+  finalizada, reprovada e cada tipo) ficam no `.ini`, e o botão *Ver
+  diagnóstico* mostra só os valores das colunas de categoria, sem fornecedor,
+  CNPJ ou valor, para conferir as regras.
+
 ## 1.5.0 — 05/10/2026
 
 ### Novo

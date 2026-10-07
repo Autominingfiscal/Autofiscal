@@ -8,7 +8,7 @@ Cada ferramenta é um script Python. O painel mostra os botões de cada uma,
 o que o script está fazendo, as perguntas dele e as configurações, sem precisar
 abrir o Prompt de Comando.
 
-![Versão](https://img.shields.io/badge/vers%C3%A3o-1.5.0-2563eb)
+![Versão](https://img.shields.io/badge/vers%C3%A3o-1.6.0-2563eb)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4)
 ![Python](https://img.shields.io/badge/Python-3.14-3776ab)
 
@@ -38,6 +38,7 @@ Excel instalado. As outras ferramentas leem e gravam as planilhas sem ele.
 | **Remessas e Faturamento** | Lança as notas da expedição na aba Remessas Porto, preenche as chaves de acesso a partir dos PDFs e alimenta a planilha de FATURAMENTO. |
 | **Lançador da expedição** | Acompanha as pastas da balança e lança na planilha aberta no Excel a tara, o peso de saída (com a cor da faixa de aceite) e o número e a hora da nota. Monta a coluna OBSERVAÇÕES ADICIONAIS com ticket, placas e lacres de cada caminhão. Registra o par de lacres de cada motorista do turno e imprime as etiquetas (15 por folha). |
 | **Painel da expedição** | Mostra o andamento da expedição no navegador: toneladas, faixa de aceite e caminhões na mina. Não usa a rede. |
+| **Dashboard Fluig** | Indicadores das solicitações de Entrada de Notas Fiscais do Fluig: total do ano, abertas no mês, ranking dos técnicos, SLA, reprovadas, fornecedores, valor e tipos. Lê a exportação mais recente e abre no navegador, com filtros. |
 | **Conferência ISSQN** | Confere a planilha de retenções de ISSQN com a conferência de retenções e com a pasta das notas. |
 | **Conferência de retenções** | Compara, nota a nota, os impostos retidos do planilhão com a conferência de retenções e gera um relatório em Excel. |
 | **Arquivar documentos do dia** | Distribui os documentos soltos da pasta do dia nas pastas das notas fiscais (NF, ticket, pré-cálculo…). Tem simulação e desfazer. |

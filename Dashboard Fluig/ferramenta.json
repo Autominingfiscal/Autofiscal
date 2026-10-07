@@ -1,0 +1,38 @@
+{
+  "nome": "Dashboard Fluig",
+  "ordem": 35,
+  "descricao": "Indicadores das solicitações de Entrada de Notas Fiscais do Fluig: total do ano, abertas no mês, ranking dos técnicos fiscais, SLA, reprovadas, fornecedores, valor das notas e tipos. Lê a exportação mais recente da consulta e abre no navegador. Os dados ficam só neste computador.",
+  "config": "dashboard_fluig_config.ini",
+  "requer": [
+    {
+      "modulo": "openpyxl",
+      "pacote": "openpyxl"
+    }
+  ],
+  "campos": {
+    "planilha": {
+      "tipo": "arquivo",
+      "ajuda": "Exportação do Fluig. Pode usar * no nome: vale o arquivo mais recente (ex.: ...\\Downloads\\Resultado da consulta de solicita*.xlsx)."
+    }
+  },
+  "acoes": [
+    {
+      "rotulo": "Atualizar dashboard",
+      "script": "dashboard_fluig.py",
+      "principal": true,
+      "descricao": "Lê a exportação mais recente do Fluig (veja Configurações) e abre o dashboard no navegador."
+    },
+    {
+      "rotulo": "Escolher outra planilha",
+      "script": "dashboard_fluig.py",
+      "args": ["{arquivo:Escolha a exportação do Fluig|*.xlsx}"],
+      "descricao": "Gera o dashboard a partir de uma planilha escolhida agora."
+    },
+    {
+      "rotulo": "Ver diagnóstico",
+      "script": "dashboard_fluig.py",
+      "args": ["--diagnostico"],
+      "descricao": "Mostra só os valores das colunas de situação, aprovação e tipo (sem fornecedor, CNPJ ou valor), para conferir as regras do .ini."
+    }
+  ]
+}

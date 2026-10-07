@@ -9,7 +9,7 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 for sub in ("", "Automacao planilhas", "Arquivador", "Lançador", "Autoiss",
             "Conferencia planilhão", "Dashboard Local", "Manutencao",
-            "Inspetor de janelas", "Email do faturamento"):
+            "Inspetor de janelas", "Email do faturamento", "Dashboard Fluig"):
     p = os.path.join(RAIZ, sub)
     if p not in sys.path:
         sys.path.insert(0, p)
